@@ -43,7 +43,7 @@ jobs:
     steps:
       - name: get branch name
         id: branch-name
-        uses: tj-actions/branch-names@v6.4
+        uses: tj-actions/branch-names@v6.5
 
       - name: checkout repository
         uses: actions/checkout@v3
