@@ -1,0 +1,79 @@
+name: Ionic Continuous Integration
+
+on:
+  workflow_call:
+    inputs:
+      do-containerize:
+        description: "Should CI flow create a container image?"
+        type: boolean
+        default: false
+      registry:
+        description: "Container registry to be used, e.g. ghcr.io, docker.io"
+        type: string
+        default: "ghcr.io"
+    outputs:
+      container-image:
+        description: "Fully qualified name of the prepared container image"
+        value: ${{jobs.build.outputs.container-image}}
+
+jobs:
+  build:
+    name: build, analyze, containerize ... repeat
+    runs-on: ubuntu-latest
+    outputs:
+      container-image: ${{steps.container-name-and-githash.outputs.container-image}}
+    permissions: write-all
+
+    steps:
+      - name: get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v6.4
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: Install dependencies
+        run: |
+          cd app 
+          npm install --force
+
+      - name: Test and coverage
+        run: |
+          cd app
+          npm test --code-coverage -- --watch=false --browsers=ChromeHeadless
+
+      - uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      # Build Container Image
+      - name: get date
+        if: inputs.do-containerize == true
+        id: time
+        uses: boredland/get-time-action@2.0.0
+        with:
+          timeZone: UTC
+          format: "YYYYMMDD"
+
+      - name: prepare container image name
+        if: inputs.do-containerize == true
+        id: container-name-and-githash
+        shell: bash
+        run: |
+          GITHUB_SHA_SHORT=$(git rev-parse --short HEAD)
+          echo "github_sha_short=$GITHUB_SHA_SHORT" >> $GITHUB_OUTPUT
+          echo "container-image=${{inputs.registry}}/${{github.repository_owner}}/${{github.event.repository.name}}:${{ steps.time.outputs.time }}_$GITHUB_SHA_SHORT" >> $GITHUB_OUTPUT
+
+      - name: build & push container image '${{ steps.container-name-and-githash.outputs.container-image }}'
+        if: inputs.do-containerize == true && steps.branch-name.outputs.ref_branch == 'main' && github.event_name != 'pull_request'
+        uses: mr-smithers-excellent/docker-build-push@v6.2
+        with:
+          image: ${{github.event.repository.name}}
+          addLatest: true
+          tags: ${{ steps.time.outputs.time }}_${{ steps.container-name-and-githash.outputs.github_sha_short }}, latest
+          dockerfile: ./app/Dockerfile
+          registry: ${{ inputs.registry }}
+          username: ${{ secrets.GHCR_USERNAME }}
+          password: ${{ secrets.GHCR_PASSWORD }}

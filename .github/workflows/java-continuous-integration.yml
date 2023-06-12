@@ -1,0 +1,137 @@
+name: Java Continuous Integration
+
+on:
+  workflow_call:
+    inputs:
+      dependency-check-auto-update:
+        description: 'If true, OWASP Dependency Check retrieves current NVD data which usually takes more than 2 minutes. Otherwise use NVD data retrieved at midnight every day.'
+        type: boolean
+        default: false
+      dependency-check-goal:
+        description: 'OWASP Dependency Check command to be executed, e.g. check, aggregate'
+        type: string
+        default: 'check'
+      do-containerize:
+        description: 'Should CI flow create a container image?'
+        type: boolean
+        default: false
+      maven-goal:
+        description: 'Maven goal during the build, e.g. verify, package, install'
+        type: string
+        default: 'verify'
+      registry:
+        description: 'Container registry to be used, e.g. ghcr.io, docker.io'
+        type: string
+        default: 'ghcr.io'
+    outputs:
+      container-image:
+        description: "Fully qualified name of the prepared container image"
+        value: ${{jobs.build.outputs.container-image}}
+
+jobs:
+  build:
+    name: build, analyze, containerize ... repeat
+    runs-on: ubuntu-latest
+    outputs:
+      container-image: ${{steps.container-name-and-githash.outputs.container-image}}
+    permissions: write-all
+
+    strategy:
+      matrix:
+        java-version: [ '17' ]
+
+    steps:
+      - name: get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v6.4
+
+      - name: checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java-version }}
+          java-package: 'jdk'
+          cache: 'maven'
+
+      - name: cache SonarQube packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: retrieving NVD database (ghcr.io)
+        if: inputs.dependency-check-auto-update == false
+        shell: bash
+        run: |
+          echo $GHCR_PASSWORD | docker login ghcr.io -u $GHCR_USERNAME --password-stdin
+          id=$(docker create ghcr.io/minova-afis/dependency-check-action:latest)
+          mkdir -p ~/.m2/repository/org/owasp/dependency-check-data
+          docker cp $id:/usr/share/dependency-check/data ~/.m2/repository/org/owasp/dependency-check-data/7.0
+          docker rm -v $id
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_PASSWORD: ${{ secrets.GHCR_PASSWORD }}
+
+      - name: Maven build and SonarQube scan
+        run: |
+          mvn --batch-mode --no-transfer-progress \
+            -P repo-github -P all-tests \
+            ${{ inputs.maven-goal }} \
+            dependency-check:${{ inputs.dependency-check-goal }} -DautoUpdate=${{inputs.dependency-check-auto-update}} \
+            sonar:sonar \
+            -Dusername=$GITHUB_ACCESS_TOKEN \
+            -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} \
+            -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            -Dsonar.projectKey=${{github.repository_owner}}_${{github.event.repository.name}} \
+            -Dsonar.branch.name=${{steps.branch-name.outputs.current_branch}} \
+            --file pom.xml \
+            --settings .github/settings.xml
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_LOGIN: ${{ secrets.SONAR_LOGIN }}
+
+      - name: store report of Dependency Check
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-check-report.html
+          path: target/dependency-check-report.html
+
+      # Build Container Image
+      - name: get date
+        if: inputs.do-containerize == true
+        id: time
+        uses: boredland/get-time-action@2.0.0
+        with:
+          timeZone: UTC
+          format: 'YYYYMMDD'
+
+      - name: prepare container image name
+        if: inputs.do-containerize == true
+        id: container-name-and-githash
+        shell: bash
+        run: |
+          GITHUB_SHA_SHORT=$(git rev-parse --short HEAD)
+          echo "github_sha_short=$GITHUB_SHA_SHORT" >> $GITHUB_OUTPUT
+          echo "container-image=${{inputs.registry}}/${{github.repository_owner}}/${{github.event.repository.name}}:${{ steps.time.outputs.time }}_$GITHUB_SHA_SHORT" >> $GITHUB_OUTPUT
+
+      - name: build & push container image '${{ steps.container-name-and-githash.outputs.container-image }}'
+        if: inputs.do-containerize == true && steps.branch-name.outputs.ref_branch == 'main' && github.event_name != 'pull_request'
+        uses: mr-smithers-excellent/docker-build-push@v6
+        with:
+          image: ${{github.event.repository.name}}
+          addLatest: true
+          tags: ${{ steps.time.outputs.time }}_${{ steps.container-name-and-githash.outputs.github_sha_short }}, latest
+          dockerfile: ./Dockerfile
+          registry: ${{ inputs.registry }}
+          username: ${{ secrets.GHCR_USERNAME }}
+          password: ${{ secrets.GHCR_PASSWORD }}

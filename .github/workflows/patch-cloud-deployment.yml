@@ -1,0 +1,55 @@
+name: Patch Cloud Deployment
+
+on:
+  workflow_call:
+    inputs:
+      cd-repo-name:
+        description: 'GitHub repository of the CD pipeline'
+        type: string
+        default: 'minova-afis/aero.minova.cloud.deployment'
+      container-image:
+        description: "Fully qualified name of the prepared container image"
+        type: string
+        required: true
+      email-address:
+        description: 'e-mail address of Git committer'
+        required: true
+        type: string
+      patch-file:
+        description: 'patch file where to insert/replace the container image string'
+        required: true
+        type: string
+    outputs:
+      container-image:
+        description: "Fully qualified name of the prepared container image"
+        value: ${{ inputs.container-image }}
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v6.4
+
+      - name: checkout repository ${{ inputs.cd-repo-name }}
+        if: steps.branch-name.outputs.ref_branch == 'main' && github.event_name != 'pull_request'
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.cd-repo-name }}
+          ref: 'main'
+          fetch-depth: 0
+          token: ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}
+
+      - name: update '${{ inputs.patch-file }}' with '${{ inputs.container-image }}'
+        if:  inputs.container-image != '' && steps.branch-name.outputs.ref_branch == 'main' && github.event_name != 'pull_request'
+        run: |
+          test -f ${{ inputs.patch-file }} || (echo "Test: ${{ inputs.patch-file }} not found" && exit 1)
+          cat "${{ inputs.patch-file }}" | sed -e "s@image:.*@image: ${{ inputs.container-image }}@g" | tee "${{ inputs.patch-file }}.tmp" || (echo "Sed: Unable to replace image name with ${{ inputs.container-image }}" && exit 2)
+          mv "${{ inputs.patch-file }}.tmp" "${{ inputs.patch-file }}" || (echo "Move: Unable to overwrite ${{ inputs.patch-file }}" && exit 3)
+          git config --global user.email "${{ inputs.email-address }}" || (echo "Git: Unable to set user.email to ${{ inputs.email-address }}" && exit 4)
+          git config --global user.name "${{ inputs.email-address }}" || (echo "Git: Unable to set user.name to ${{ inputs.email-address }}" && exit 5)
+          git add . || (echo "Git: Unable to add changed files" && exit 6)
+          git commit -m "Promoting to container ${{ inputs.container-image }}" || (echo "Git: Unable to commit files" && exit 7)
+          git push || (echo "Git: Unable to push" && exit 8)
