@@ -1,0 +1,68 @@
+name: release V12 applications
+on:
+  workflow_call:
+    inputs:
+      release-version:
+        description: 'Version string of this release'
+        type: string
+        required: true
+      client-target-directory:
+        description: "Directory containing helper's *.jar files"
+        type: string
+        required: true
+
+jobs:
+  release:
+    name: release with helper
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        java-version: ['17']
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}
+
+      - name: set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java-version }}
+          java-package: 'jdk'
+          cache: 'maven'
+
+      - name: Build Helper and Copy to plugins
+        run: |
+          cd client && mvn org.eclipse.tycho:tycho-versions-plugin:set-version -DnewVersion="${{ inputs.release-version }}.qualifier"
+          cd ..
+          mvn --batch-mode --update-snapshots verify --file client/pom.xml
+          rm app/src/main/app/plugins/*
+          cp ${{ client-target-directory }}/*.jar app/src/main/app/plugins/
+          git config user.email "service@minova.com"
+          git config user.name "minova-worker"
+          git add . 
+          git commit -m "add .jar to plugin-folder"
+          git push
+
+      - name: Maven release '${{ inputs.release-version }}'
+        shell: bash
+        run: |
+          git config --global user.email "service@minova.com"
+          git config --global user.name "minova-worker"
+          cd $GITHUB_WORKSPACE/
+          mvn --batch-mode --no-transfer-progress \
+            -P repo-github \
+            release:prepare release:perform \
+            -Dusername=$GITHUB_ACCESS_TOKEN \
+            -Dpassword=$GITHUB_ACCESS_TOKEN \
+            -DreleaseVersion=${{ inputs.release-version }} \
+            -Darguments="-Dmaven.javadoc.skip=true" \
+            -Darguments="-DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            --settings .github/settings.xml
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
