@@ -35,12 +35,13 @@ jobs:
           cache: 'maven'
 
       - name: Build Helper and Copy to plugins
+        shell: bash
         run: |
           cd client && mvn org.eclipse.tycho:tycho-versions-plugin:set-version -DnewVersion="${{ inputs.release-version }}.qualifier"
           cd ..
           mvn --batch-mode --update-snapshots verify --file client/pom.xml
           rm app/src/main/app/plugins/*
-          cp ${{ client-target-directory }}/*.jar app/src/main/app/plugins/
+          cp ${{ inputs.client-target-directory }}/*.jar app/src/main/app/plugins/
           git config user.email "service@minova.com"
           git config user.name "minova-worker"
           git add . 
