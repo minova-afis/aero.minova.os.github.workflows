@@ -37,9 +37,7 @@ jobs:
       - name: Build Helper and Copy to plugins
         shell: bash
         run: |
-          export QUALIFIER=${{ inputs.release-version }}".qualifier"
-          echo ${QUALIFIER}
-          cd client && mvn org.eclipse.tycho:tycho-versions-plugin:set-version -DnewVersion=${QUALIFIER}
+          cd client && mvn org.eclipse.tycho:tycho-versions-plugin:set-version -DnewVersion="${{ inputs.release-version }}.qualifier"
           cd ..
           mvn --batch-mode --no-transfer-progress \
             --update-snapshots verify --file client/pom.xml
