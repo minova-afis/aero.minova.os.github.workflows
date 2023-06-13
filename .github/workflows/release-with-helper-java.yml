@@ -41,8 +41,10 @@ jobs:
           cd ..
           mvn --batch-mode --no-transfer-progress \
             --update-snapshots verify --file client/pom.xml
+          set -xv
           rm app/src/main/app/plugins/*
-          cp ${{ inputs.client-target-directory }}/*.jar app/src/main/app/plugins/
+          ls -la ${{ inputs.client-target-directory }}
+          cp -av ${{ inputs.client-target-directory }}/*.jar app/src/main/app/plugins/
           git config user.email "service@minova.com"
           git config user.name "minova-worker"
           git add . 
