@@ -37,7 +37,9 @@ jobs:
       - name: Build Helper and Copy to plugins
         shell: bash
         run: |
-          cd client && mvn --batch-mode --no-transfer-progress org.eclipse.tycho:tycho-versions-plugin:set-version -DnewVersion="${{ inputs.release-version }}.qualifier"
+          cd client && mvn --batch-mode --no-transfer-progress \
+              org.eclipse.tycho:tycho-versions-plugin:set-version -DnewVersion="${{ inputs.release-version }}.qualifier" \
+              --settings .github/settings.xml
           cd ..
           mvn --batch-mode --no-transfer-progress \
             --update-snapshots verify --file client/pom.xml
@@ -48,6 +50,10 @@ jobs:
           git add . 
           git commit -m "add .jar to plugin-folder"
           git push
+            --settings .github/settings.xml
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
 
       - name: Maven release '${{ inputs.release-version }}'
         shell: bash
