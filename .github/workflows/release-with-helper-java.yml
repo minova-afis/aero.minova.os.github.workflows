@@ -59,6 +59,9 @@ jobs:
           git add . 
           git commit -m "added .jar to plugin-folder"
           git push
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
 
       - name: Maven release '${{ inputs.release-version }}'
         shell: bash
