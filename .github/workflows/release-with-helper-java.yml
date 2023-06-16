@@ -49,7 +49,9 @@ jobs:
         shell: bash
         run: |
           mvn --batch-mode --no-transfer-progress \
-            --update-snapshots verify --file client/pom.xml
+            --update-snapshots verify \
+            --file client/pom.xml \
+            --settings .github/settings.xml
           rm app/src/main/app/plugins/*
           cp -av ${{ inputs.client-target-directory }}/*.jar app/src/main/app/plugins/
           git config user.email "service@minova.com"
