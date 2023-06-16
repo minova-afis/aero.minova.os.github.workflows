@@ -37,7 +37,7 @@ jobs:
       - name: Build Helper and Copy to plugins
         shell: bash
         run: |
-          cd client && mvn --batch-mode --no-transfer-progress org.eclipse.tycho:tycho-versions-plugin:set-version -DnewVersion="${{ inputs.release-version }}.qualifier" --settings .github/settings.xml
+          cd client && mvn --batch-mode --no-transfer-progress org.eclipse.tycho:tycho-versions-plugin:set-version -DnewVersion="${{ inputs.release-version }}.qualifier" --settings ../.github/settings.xml
           cd ..
           mvn --batch-mode --no-transfer-progress \
             --update-snapshots verify --file client/pom.xml
