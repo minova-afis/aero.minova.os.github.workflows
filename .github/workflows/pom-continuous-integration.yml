@@ -1,0 +1,51 @@
+name: POM Continuous Integration
+
+on:
+  workflow_call:
+    inputs:
+      maven-goal:
+        description: 'Maven goal during the build, e.g. verify, package, install'
+        type: string
+        default: 'verify'
+
+jobs:
+  build:
+    name: build ... repeat
+    runs-on: ubuntu-latest
+    outputs:
+      container-image: ${{steps.container-name-and-githash.outputs.container-image}}
+    permissions: write-all
+
+    strategy:
+      matrix:
+        java-version: [ '17' ]
+
+    steps:
+      - name: get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v6.5
+
+      - name: checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java-version }}
+          java-package: 'jdk'
+          cache: 'maven'
+
+      - name: Maven build and SonarQube scan
+        run: |
+          mvn --batch-mode --no-transfer-progress \
+            -P repo-github \
+            -Dusername=$GITHUB_ACCESS_TOKEN \
+            -Dpassword=$GITHUB_ACCESS_TOKEN \
+            --settings .github/settings.xml
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}

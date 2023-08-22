@@ -1,0 +1,49 @@
+name: release POM
+on:
+  workflow_call:
+    inputs:
+      release-version:
+        description: 'Version string of this release'
+        type: string
+        required: true
+
+jobs:
+  release:
+    name: release ... repeat
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        java-version: ['17']
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}
+
+      - name: set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java-version }}
+          java-package: 'jdk'
+          cache: 'maven'
+
+      - name: Maven release '${{ inputs.release-version }}'
+        shell: bash
+        run: |
+          git config --global user.email "service@minova.com"
+          git config --global user.name "minova-worker"
+          cd $GITHUB_WORKSPACE/
+          mvn --batch-mode --no-transfer-progress \
+            -P repo-github \
+            release:prepare release:perform \
+            -Dusername=$GITHUB_ACCESS_TOKEN \
+            -Dpassword=$GITHUB_ACCESS_TOKEN \
+            -DreleaseVersion=${{ inputs.release-version }} \
+            --settings .github/settings.xml
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
