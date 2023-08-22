@@ -42,6 +42,7 @@ jobs:
         run: |
           mvn --batch-mode --no-transfer-progress \
             -P repo-github \
+            clean ${{ inputs.maven-goal }} \
             -Dusername=$GITHUB_ACCESS_TOKEN \
             -Dpassword=$GITHUB_ACCESS_TOKEN \
             --settings .github/settings.xml
