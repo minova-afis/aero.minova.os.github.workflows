@@ -38,7 +38,7 @@ jobs:
           java-package: 'jdk'
           cache: 'maven'
 
-      - name: Maven build and SonarQube scan
+      - name: Maven build
         run: |
           mvn --batch-mode --no-transfer-progress \
             -P repo-github \
