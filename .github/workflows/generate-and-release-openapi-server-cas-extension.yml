@@ -1,0 +1,127 @@
+name: generate OpenAPI specification, release if on 'main' branch
+on:
+  workflow_call:
+    inputs:
+      openapi-specification:
+        description: 'OpenAPI specification in YAML format used by the OpenAPI generator'
+        type: string
+        required: true
+      openapi-config:
+        description: 'Configuration file in JSON format used by the OpenAPI generator'
+        type: string
+        default: 'spring.config.json'
+      openapi-generated-source-dir:
+        description: 'Directory for generated source code'
+        type: string
+        default: 'out-server-spring'
+    outputs:
+      version:
+        description: "Version tag of the OpenPI specification"
+        value: ${{jobs.generate-server-springboot.outputs.version}}
+
+jobs:
+  generate-server-springboot:
+    name: server for SpringBoot
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{steps.extract-version.outputs.version}}
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v6.5
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          token: ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}
+
+      - name: prepare GOlang
+        uses: actions/setup-go@v4
+
+      - name: Extract version from OpenAPI specification
+        id: extract-version
+        run: |
+          go mod init extract-version || /bin/true
+          go get gopkg.in/yaml.v3          
+          go run tools/extract-version/extract-version-from-openapi-spec.go \
+            --openapi-spec-file=${{ inputs.openapi-specification }}
+
+      - name: SonarQube Scan '${{ steps.extract-version.outputs.version }}'
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{github.repository_owner}}_${{github.event.repository.name}}
+            -Dsonar.branch.name=${{steps.branch-name.outputs.current_branch}}
+
+      - name: generate API for server/SpringBoot
+        uses: docker://openapitools/openapi-generator-cli:v6.6.0
+        with:
+          entrypoint: /usr/local/bin/docker-entrypoint.sh
+          args: generate \
+            -i ${{ inputs.openapi-specification }} \
+            -g spring \
+            -o ${{ inputs.openapi-generated-source-dir }} \
+            -c ${{ inputs.openapi-config }}
+
+      - name: Merge generated source into template directory (CAS style)
+        id: prepare-template-directory
+        run: |
+          go mod init prepare-template-directory || /bin/true
+          go get gopkg.in/yaml.v3          
+          go run tools/prepare-template-directory/prepare-template-directory.go \
+            --debug \
+            --openapi-spec-file=${{ inputs.openapi-specification }} \
+            --generator-output-dir=${{ inputs.openapi-generated-source-dir }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Maven build '${{ steps.prepare-template-directory.outputs.version }}' (CAS style)
+        if: steps.branch-name.outputs.ref_branch != 'main'
+        shell: bash
+        run: |
+          cd template-server-spring
+          mvn --batch-mode --no-transfer-progress \
+            compile \
+            -DexternalSourceDir="${{ github.workspace }}/${{ inputs.openapi-generated-source-dir }}" \
+            --settings ../.github/settings.xml
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+
+      - name: Maven release '${{ steps.prepare-template-directory.outputs.version }}' (CAS style)
+        if: steps.branch-name.outputs.ref_branch == 'main'
+        shell: bash
+        run: |
+          cd template-server-spring
+          git config --global user.email "service@minova.com"
+          git config --global user.name "minova-worker"
+          git add */pom.xml
+          git add pom.xml
+          git commit -m "added modified POMs for release ${{ steps.prepare-template-directory.outputs.version }}"
+          git push
+          mvn --batch-mode --no-transfer-progress \
+            -P repo-github \
+            -DexternalSourceDir="${{ github.workspace }}/${{ inputs.openapi-generated-source-dir }}" \
+            release:prepare release:perform \
+            -Darguments="-DexternalSourceDir=${{ github.workspace }}/${{ inputs.openapi-generated-source-dir }}" \
+            -Dusername=$GITHUB_ACCESS_TOKEN \
+            -Dpassword=$GITHUB_ACCESS_TOKEN \
+            -DreleaseVersion=${{ steps.prepare-template-directory.outputs.version }} \
+            --settings ../.github/settings.xml
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
