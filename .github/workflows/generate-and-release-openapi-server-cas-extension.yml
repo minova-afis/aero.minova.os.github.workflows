@@ -43,7 +43,7 @@ jobs:
       - name: checkout tools repository
         uses: actions/checkout@v4
         with:
-          repository: https://github.com/minova-afis/aero.minova.os.github.workflows
+          repository: 'minova-afis/aero.minova.os.github.workflows'
           ref: 'main'
           fetch-depth: 0
           path: '/workflows'

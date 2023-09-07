@@ -1,4 +1,8 @@
 # Content
-## prepare-version
-* Replace version strings in POMs with value provided inside OpenAPI specification
-* Prepare CAS extension template with patches to be released as artifact for customized CAS projects 
+## extract-version
+* Extract version string from a OpenAPI specification file
+
+## prepare-template-directory
+* Replace version strings in POMs with value provided inside OpenAPI specification file
+* Add dependencies from generated `pom.xml` to the `openapi` submodule inside the template directory
+* Release prepared CAS extension template as `app` artifact for customized CAS projects 
