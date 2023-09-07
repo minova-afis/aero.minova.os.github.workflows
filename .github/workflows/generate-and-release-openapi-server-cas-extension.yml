@@ -20,8 +20,8 @@ on:
         value: ${{jobs.generate-server-springboot.outputs.version}}
 
 jobs:
-  generate-server-springboot:
-    name: server for SpringBoot
+  generate-server-cas-extension:
+    name: server as CAS Extension
     runs-on: ubuntu-latest
     outputs:
       version: ${{steps.extract-version.outputs.version}}
@@ -65,11 +65,7 @@ jobs:
         uses: docker://openapitools/openapi-generator-cli:v6.6.0
         with:
           entrypoint: /usr/local/bin/docker-entrypoint.sh
-          args: generate \
-            -i ${{ inputs.openapi-specification }} \
-            -g spring \
-            -o ${{ inputs.openapi-generated-source-dir }} \
-            -c ${{ inputs.openapi-config }}
+          args: generate -i ${{ inputs.openapi-specification }} -g spring -o ${{ inputs.openapi-generated-source-dir }} -c ${{ inputs.openapi-config }}
 
       - name: Merge generated source into template directory (CAS style)
         id: prepare-template-directory
