@@ -16,8 +16,9 @@ on:
         required: true
 
 jobs:
-  build-client-typescript-angular:
-    name: generate, release ... repeat
+  generate-client-typescript-angular:
+    name: client for Typescript/Angular
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
