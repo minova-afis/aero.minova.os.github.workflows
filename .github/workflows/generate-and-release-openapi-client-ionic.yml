@@ -34,7 +34,7 @@ jobs:
         uses: docker://openapitools/openapi-generator-cli:v6.6.0
         with:
           entrypoint: /usr/local/bin/docker-entrypoint.sh
-          args: generate -i ${{openapi-specification}} -g typescript-angular -o . -c ${{ inputs.openapi-config }} --git-host github.com --git-user-id ${{ github.repository_owner }} --git-repo-id ${{ github.event.repository.name }}
+          args: generate -i ${{ inputs.openapi-specification }} -g typescript-angular -o . -c ${{ inputs.openapi-config }} --git-host github.com --git-user-id ${{ github.repository_owner }} --git-repo-id ${{ github.event.repository.name }}
 
       - uses: actions/setup-node@v3
         with:
@@ -44,7 +44,7 @@ jobs:
       - name: Publish NPM package
         if: steps.branch-name.outputs.ref_branch == 'main'
         run: |
-          cd ${{ base-package-as-path }}
+          cd ${{ inputs.base-package-as-path }}
           npm publish --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
