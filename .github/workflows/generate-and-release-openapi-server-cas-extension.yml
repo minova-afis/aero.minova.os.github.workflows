@@ -55,6 +55,7 @@ jobs:
       - name: Extract version from OpenAPI specification
         id: extract-version
         run: |
+          ls -la /workflows
           go mod init extract-version || /bin/true
           go get gopkg.in/yaml.v3          
           go run tools/extract-version/extract-version-from-openapi-spec.go \
