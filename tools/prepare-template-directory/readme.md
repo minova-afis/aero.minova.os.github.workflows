@@ -5,7 +5,7 @@
 ```shell
 go mod init extract-version
 go mod tidy
-go get gopkg.in/yaml.v2
+go get gopkg.in/yaml.v3
 ```
 
 ### Usage

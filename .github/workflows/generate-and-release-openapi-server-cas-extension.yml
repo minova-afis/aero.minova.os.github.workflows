@@ -40,6 +40,15 @@ jobs:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
           token: ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}
 
+      - name: checkout tools repository
+        uses: actions/checkout@v4
+        with:
+          repository: https://github.com/minova-afis/aero.minova.os.github.workflows
+          ref: 'main'
+          fetch-depth: 0
+          path: '/workflows'
+          token: ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}
+
       - name: prepare GOlang
         uses: actions/setup-go@v4
 
