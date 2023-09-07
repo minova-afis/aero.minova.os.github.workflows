@@ -16,3 +16,8 @@ Internal/**
 logs/**
 service/src/main/resources/application-local.properties
 service/logs/**
+
+### GOlang
+go.mod
+go.sum
+/.run/
