@@ -40,11 +40,11 @@ jobs:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
           token: ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}
 
-      - name: Prepare tools directory
+      - name: Prepare 'tools' directory
         run: |
           mkdir workflows
 
-      - name: checkout tools repository
+      - name: Checkout 'tools' repository
         uses: actions/checkout@v4
         with:
           repository: 'minova-afis/aero.minova.os.github.workflows'
@@ -58,7 +58,6 @@ jobs:
       - name: Extract version from OpenAPI specification
         id: extract-version
         run: |
-          ls -la workflows
           go mod init extract-version || /bin/true
           go get gopkg.in/yaml.v3          
           go run workflows/tools/extract-version/extract-version-from-openapi-spec.go \
