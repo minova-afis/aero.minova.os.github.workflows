@@ -85,7 +85,7 @@ jobs:
         run: |
           go mod init prepare-template-directory || /bin/true
           go get gopkg.in/yaml.v3          
-          go run tools/prepare-template-directory/prepare-template-directory.go \
+          go run workflows/tools/prepare-template-directory/prepare-template-directory.go \
             --debug \
             --openapi-spec-file=${{ inputs.openapi-specification }} \
             --generator-output-dir=${{ inputs.openapi-generated-source-dir }}
