@@ -53,6 +53,7 @@ jobs:
           if [[ $commit_message == *"[maven-release-plugin]"* ]]; then
             echo "Commit initiated by 'maven-release-plugin'. Skipping workflow..."
             exit 0
+          fi
 
       - name: Prepare 'tools' directory
         run: |

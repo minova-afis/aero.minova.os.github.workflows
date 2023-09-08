@@ -33,6 +33,7 @@ jobs:
           if [[ $commit_message == *"[maven-release-plugin]"* ]]; then
             echo "Commit initiated by 'maven-release-plugin'. Skipping workflow..."
             exit 0
+          fi
 
       - name: generate API for client/Java
         uses: docker://openapitools/openapi-generator-cli:v6.6.0
