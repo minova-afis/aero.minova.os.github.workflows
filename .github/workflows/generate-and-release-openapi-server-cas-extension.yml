@@ -16,7 +16,7 @@ on:
         default: 'out-server-spring'
     outputs:
       version:
-        description: "Version tag of the OpenPI specification"
+        description: "Version tag of the OpenAPI specification"
         value: ${{jobs.generate-server-springboot.outputs.version}}
 
 jobs:
