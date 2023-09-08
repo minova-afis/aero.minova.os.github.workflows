@@ -30,13 +30,6 @@ jobs:
       packages: write
 
     steps:
-      - name: Skip commits by 'maven-release-plugin'
-        run: |
-          commit_message=$(git log -1 --pretty=%B)
-          if [[ $commit_message == *"[maven-release-plugin]"* ]]; then
-            echo "Commit initiated by 'maven-release-plugin'. Skipping workflow..."
-            exit 0
-
       - name: Get branch name
         id: branch-name
         uses: tj-actions/branch-names@v6.5
@@ -46,6 +39,20 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
           token: ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}
+
+      - name: Skip commits by 'maven-release-plugin'
+        run: |
+          commit_message=$(git log -1 --pretty=%B)
+          if [[ $commit_message == *"[maven-release-plugin]"* ]]; then
+            echo "Commit initiated by 'maven-release-plugin'. Skipping workflow..."
+            exit 0
+
+      - name: Skip commits by 'maven-release-plugin'
+        run: |
+          commit_message=$(git log -1 --pretty=%B)
+          if [[ $commit_message == *"[maven-release-plugin]"* ]]; then
+            echo "Commit initiated by 'maven-release-plugin'. Skipping workflow..."
+            exit 0
 
       - name: Prepare 'tools' directory
         run: |
