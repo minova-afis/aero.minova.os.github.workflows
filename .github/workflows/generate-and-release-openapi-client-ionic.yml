@@ -1,0 +1,51 @@
+name: generate OpenAPI specification, release if on 'main' branch
+on:
+  workflow_call:
+    inputs:
+      openapi-specification:
+        description: 'OpenAPI specification in YAML format used by the OpenAPI generator'
+        type: string
+        required: true
+      openapi-config:
+        description: 'Configuration file in JSON format used by the OpenAPI generator'
+        type: string
+        default: 'typescript-angular.config.json'
+      base-package-as-path:
+        description: "Value of 'basePackage' inside configuration file converted to a path expression, e.g. 'sam.openapi.api.client' -> 'sam/openapi/api/client'"
+        type: string
+        required: true
+
+jobs:
+  generate-client-typescript-angular:
+    name: client for Typescript/Angular
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v6.5
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate API for client in TypeScript-Angular
+        uses: docker://openapitools/openapi-generator-cli:v6.6.0
+        with:
+          entrypoint: /usr/local/bin/docker-entrypoint.sh
+          args: generate -i ${{ inputs.openapi-specification }} -g typescript-angular -o . -c ${{ inputs.openapi-config }} --git-host github.com --git-user-id ${{ github.repository_owner }} --git-repo-id ${{ github.event.repository.name }}
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          registry-url: 'https://npm.pkg.github.com'
+
+      - name: Publish NPM package
+        if: steps.branch-name.outputs.ref_branch == 'main'
+        run: |
+          cd ${{ inputs.base-package-as-path }}
+          npm publish --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}

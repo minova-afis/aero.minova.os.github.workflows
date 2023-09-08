@@ -1,0 +1,64 @@
+name: generate OpenAPI specification, release if on 'main' branch
+on:
+  workflow_call:
+    inputs:
+      openapi-specification:
+        description: 'OpenAPI specification in YAML format used by the OpenAPI generator'
+        type: string
+        required: true
+      openapi-config:
+        description: 'Configuration file in JSON format used by the OpenAPI generator'
+        type: string
+        default: 'java.config.json'
+
+jobs:
+  generate-client-java:
+    name: client for Java
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v6.5
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: generate API for client/Java
+        uses: docker://openapitools/openapi-generator-cli:v6.6.0
+        with:
+          entrypoint: /usr/local/bin/docker-entrypoint.sh
+          args: generate -i ${{ inputs.openapi-specification }} -g java -o . -c ${{ inputs.openapi-config }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Build with Maven
+        if: steps.branch-name.outputs.ref_branch != 'main'
+        run: |
+          mvn --batch-mode --no-transfer-progress \
+            compile
+
+      - name: Build release with Maven
+        if: steps.branch-name.outputs.ref_branch == 'main'
+        run: |
+          git config --global user.email "service@minova.com"
+          git config --global user.name "minova-worker"
+          mvn --batch-mode --no-transfer-progress \
+            deploy \
+            -Dusername=$GITHUB_ACCESS_TOKEN \
+            -Dpassword=$GITHUB_ACCESS_TOKEN \
+            -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/minova-afis/aero.minova.maven.root \
+            -Ddependency-check.skip=true -Dmaven.test.skip=true \
+            --settings .github/settings.xml
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
