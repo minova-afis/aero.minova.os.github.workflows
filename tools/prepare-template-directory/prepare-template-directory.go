@@ -190,7 +190,7 @@ func computeSnapshotVersion(version string, config Config) string {
 	return version
 }
 
-func replaceVersionInsidePomFiles(directoryWithPoms string, similarVersions []string, version string, config Config) {
+func replaceVersionInsidePomFiles(directoryWithPoms string, version string, config Config) {
 	err := filepath.Walk(directoryWithPoms, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
