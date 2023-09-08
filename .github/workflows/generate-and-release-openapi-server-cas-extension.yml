@@ -30,6 +30,13 @@ jobs:
       packages: write
 
     steps:
+      - name: Skip commits by 'maven-release-plugin'
+        run: |
+          commit_message=$(git log -1 --pretty=%B)
+          if [[ $commit_message == *"[maven-release-plugin]"* ]]; then
+            echo "Commit initiated by 'maven-release-plugin'. Skipping workflow..."
+            exit 0
+
       - name: Get branch name
         id: branch-name
         uses: tj-actions/branch-names@v6.5
@@ -118,7 +125,7 @@ jobs:
           git config --global user.name "minova-worker"
           git add */pom.xml
           git add pom.xml
-          git commit -m "added modified POMs for release ${{ steps.prepare-template-directory.outputs.version }}"
+          git commit -m "[maven-release-plugin] added modified POMs for release ${{ steps.prepare-template-directory.outputs.version }}"
           mvn --batch-mode --no-transfer-progress \
             -P repo-github \
             -DpushChanges=false \

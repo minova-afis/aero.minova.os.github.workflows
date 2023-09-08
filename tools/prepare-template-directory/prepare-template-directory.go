@@ -67,7 +67,7 @@ func main() {
 
 	// Process all pom.xml files in the CasTemplateDir (if provided)
 	if config.CasTemplateDir != "" {
-		replaceVersionInsidePomFiles(config.CasTemplateDir, []string{openApiSpecificationVersion, snapshotVersion}, snapshotVersion, config)
+		replaceVersionInsidePomFiles(config.CasTemplateDir, snapshotVersion, config)
 	}
 
 	if config.CasTemplateOpenApiPomFile != "" {
@@ -255,12 +255,6 @@ func replaceVersionInsidePomFiles(directoryWithPoms string, similarVersions []st
 								log.Fatal(err)
 							}
 
-							for _, similarVersion := range similarVersions {
-								if similarVersion == pomVersion {
-									log.Printf("version '%s' inside file '%s' is similar to an already processed version '%s': Process stopped\n", pomVersion, path, similarVersion)
-									os.Exit(1)
-								}
-							}
 							pomVersion = version
 
 							// modify the version value and encode the element back

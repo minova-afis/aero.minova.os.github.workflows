@@ -24,6 +24,13 @@ jobs:
       packages: write
 
     steps:
+      - name: Skip commits by 'maven-release-plugin'
+        run: |
+          commit_message=$(git log -1 --pretty=%B)
+          if [[ $commit_message == *"[maven-release-plugin]"* ]]; then
+            echo "Commit initiated by 'maven-release-plugin'. Skipping workflow..."
+            exit 0
+
       - name: Get branch name
         id: branch-name
         uses: tj-actions/branch-names@v6.5
