@@ -36,7 +36,7 @@ jobs:
           commit_message=$(git log -1 --pretty=%B)
           if [[ $commit_message == *"[maven-release-plugin]"* ]]; then
             echo "Commit initiated by 'maven-release-plugin'. Skipping workflow..."
-            exit 0
+            exit 78
           fi
 
       - name: Generate API for client in TypeScript-Angular
