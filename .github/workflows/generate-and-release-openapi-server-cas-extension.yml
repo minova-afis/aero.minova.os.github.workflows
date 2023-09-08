@@ -122,8 +122,6 @@ jobs:
         shell: bash
         run: |
           cd template-server-spring
-          git config --global user.email "service@minova.com"
-          git config --global user.name "minova-worker"
           git add */pom.xml
           git add pom.xml
           git commit -m "[maven-release-plugin] added modified POMs for release ${{ steps.prepare-template-directory.outputs.version }}"
