@@ -253,6 +253,12 @@ func replaceVersionInsidePomFiles(directoryWithPoms string, version string, conf
 							if err = decoder.DecodeElement(&pomVersion, &v); err != nil {
 								log.Fatal(err)
 							}
+
+							if pomVersion == version {
+		    					log.Printf("version '%s' inside file '%s' is equal to new proposed '%s': Giving up\n", pomVersion, path, version)
+               					os.Exit(1)
+							}
+
 							pomVersion = version
 
 							// modify the version value and encode the element back

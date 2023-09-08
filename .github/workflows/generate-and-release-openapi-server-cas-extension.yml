@@ -119,7 +119,6 @@ jobs:
           git add */pom.xml
           git add pom.xml
           git commit -m "added modified POMs for release ${{ steps.prepare-template-directory.outputs.version }}"
-          git push
           mvn --batch-mode --no-transfer-progress \
             -P repo-github \
             -DexternalSourceDir="${{ github.workspace }}/${{ inputs.openapi-generated-source-dir }}" \
