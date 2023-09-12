@@ -34,7 +34,15 @@ jobs:
         id: branch-name
         uses: tj-actions/branch-names@v6.5
 
+      - name: Checkout repository (read-only)
+        if: steps.branch-name.outputs.ref_branch != 'main'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          token: ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}
+
       - name: Checkout repository
+        if: steps.branch-name.outputs.ref_branch == 'main'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
@@ -58,7 +66,6 @@ jobs:
           repository: 'minova-afis/aero.minova.os.github.workflows'
           ref: 'main'
           path: 'workflows'
-          token: ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}
 
       - name: prepare GOlang
         uses: actions/setup-go@v4
