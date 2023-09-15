@@ -41,7 +41,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd app 
-          npm install --force
+          npm install --legacy-peer-deps
 
       - name: Test and coverage
         run: |
