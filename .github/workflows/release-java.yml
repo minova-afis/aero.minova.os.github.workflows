@@ -32,7 +32,7 @@ jobs:
 
     strategy:
       matrix:
-        java-version: ['17']
+        java-version: ['21']
 
     steps:
       - name: checkout repository
@@ -43,7 +43,7 @@ jobs:
       - name: set up JDK
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
+          distribution: 'corretto'
           java-version: ${{ matrix.java-version }}
           java-package: 'jdk'
           cache: 'maven'
