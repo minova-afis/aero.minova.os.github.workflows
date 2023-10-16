@@ -36,7 +36,7 @@ jobs:
           fi
 
       - name: generate API for client/Java
-        uses: docker://openapitools/openapi-generator-cli:v6.6.0
+        uses: docker://openapitools/openapi-generator-cli:v7.0.1
         with:
           entrypoint: /usr/local/bin/docker-entrypoint.sh
           args: generate -i ${{ inputs.openapi-specification }} -g java -o . -c ${{ inputs.openapi-config }}
