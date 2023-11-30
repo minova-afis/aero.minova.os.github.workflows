@@ -7,6 +7,10 @@ on:
         description: "Should CI flow create a container image?"
         type: boolean
         default: false
+      do-publish:
+        description: "Should CI flow publish an artifact?"
+        type: boolean
+        default: false
       registry:
         description: "Container registry to be used, e.g. ghcr.io, docker.io"
         type: string
@@ -52,6 +56,12 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      - name: publish artifact
+        if: inputs.do-publish == true
+        shell: bash
+        run: |
+           npm publish
 
       # Build Container Image
       - name: get date
