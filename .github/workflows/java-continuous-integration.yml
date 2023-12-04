@@ -83,7 +83,7 @@ jobs:
           mvn --batch-mode --no-transfer-progress \
             -P repo-github -P all-tests \
             ${{ inputs.maven-goal }} \
-            dependency-check:${{ inputs.dependency-check-goal }} -DautoUpdate=${{inputs.dependency-check-auto-update}} \
+            org.owasp:dependency-check-maven:${{ inputs.dependency-check-goal }} -DautoUpdate=${{inputs.dependency-check-auto-update}} \
             sonar:sonar \
             -Dusername=$GITHUB_ACCESS_TOKEN \
             -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} \
