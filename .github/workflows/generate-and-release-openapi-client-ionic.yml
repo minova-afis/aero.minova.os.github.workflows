@@ -26,7 +26,7 @@ jobs:
     steps:
       - name: Get branch name
         id: branch-name
-        uses: tj-actions/branch-names@v6.5
+        uses: tj-actions/branch-names@v7.0.7
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
           entrypoint: /usr/local/bin/docker-entrypoint.sh
           args: generate -i ${{ inputs.openapi-specification }} -g typescript-angular -o . -c ${{ inputs.openapi-config }} --git-host github.com --git-user-id ${{ github.repository_owner }} --git-repo-id ${{ github.event.repository.name }}
 
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 16
           registry-url: 'https://npm.pkg.github.com'
