@@ -32,7 +32,7 @@ jobs:
     steps:
       - name: Get branch name
         id: branch-name
-        uses: tj-actions/branch-names@v6.5
+        uses: tj-actions/branch-names@v7.0.7
 
       - name: Checkout repository (read-only)
         if: steps.branch-name.outputs.ref_branch != 'main'
