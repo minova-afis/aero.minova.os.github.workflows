@@ -65,7 +65,7 @@ jobs:
           path: 'workflows'
 
       - name: prepare GOlang
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
 
       - name: Extract version from OpenAPI specification
         id: extract-version
