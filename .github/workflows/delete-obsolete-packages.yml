@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: delete '${{inputs.package-name}}' packages
-        uses: actions/delete-package-versions@v4
+        uses: actions/delete-package-versions@v5
         with:
           #repo: 'aero.minova.maven.root'
           package-name: ${{inputs.package-name}}
