@@ -18,6 +18,10 @@ on:
         description: 'Folder of the software project to be released in the repo.'
         type: string
         default: './'
+      java-version:
+        description: 'This is the version of Java used for release.'
+        type: string
+        default: '21'
       release-version:
         description: 'Version string of this release'
         type: string
@@ -36,7 +40,7 @@ jobs:
 
     strategy:
       matrix:
-        java-version: ['21']
+        java-version: [${{ inputs.java-version }}]
 
     steps:
       - name: checkout repository
