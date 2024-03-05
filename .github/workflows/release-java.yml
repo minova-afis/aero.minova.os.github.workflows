@@ -66,7 +66,7 @@ jobs:
             -DreleaseVersion=${{ inputs.release-version }} \
             -Darguments="-Dmaven.javadoc.skip=true" \
             -Darguments="-DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-            --settings .github/settings.xml
+            --settings $GITHUB_WORKSPACE/.github/settings.xml
         env:
           MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
           MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
