@@ -40,7 +40,7 @@ jobs:
 
     strategy:
       matrix:
-        java-version: [${{ inputs.java-version }}]
+        java-version: ['21']
 
     steps:
       - name: checkout repository
