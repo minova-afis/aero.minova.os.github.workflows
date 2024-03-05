@@ -14,6 +14,10 @@ on:
         description: 'Container registry to be used, e.g. ghcr.io, docker.io'
         type: string
         default: 'ghcr.io'
+      folder:
+        description: 'Folder of the software project to be released in the repo.'
+        type: string
+        default: './'
       release-version:
         description: 'Version string of this release'
         type: string
@@ -53,7 +57,7 @@ jobs:
         run: |
           git config --global user.email "service@minova.com"
           git config --global user.name "minova-worker"
-          cd $GITHUB_WORKSPACE/
+          cd $GITHUB_WORKSPACE/${{inputs.folder}}
           mvn --batch-mode --no-transfer-progress \
             -P repo-github \
             release:prepare release:perform \
