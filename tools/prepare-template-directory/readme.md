@@ -27,7 +27,7 @@ Usage of /var/folders/74/f87zby6s2cn6q_jsn5n6zmj4wjs0zx/T/go-build3319720530/b00
         File containing the OpenAPI specification (YAML)
 ```
 
-### Execute Update of TLS certificates
+### Execute preparation of POM.xml files
 ```shell
  go run tools/prepare-template-directory/prepare-template-directory.go \
     --openapi-spec-file=sam-openapi.yml \
