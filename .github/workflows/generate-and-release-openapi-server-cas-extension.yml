@@ -14,6 +14,10 @@ on:
         description: 'Directory for generated source code'
         type: string
         default: 'out-server-spring'
+      java-version:
+        description: 'This is the version of Java used for release.'
+        type: string
+        default: '21'
     outputs:
       version:
         description: "Version tag of the OpenAPI specification"
@@ -105,7 +109,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: ${{ matrix.java-version }}
           cache: 'maven'
 
       - name: Maven build '${{ steps.prepare-template-directory.outputs.version }}' (CAS style)

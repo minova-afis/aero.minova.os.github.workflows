@@ -7,6 +7,10 @@ on:
         description: 'Maven goal during the build, e.g. verify, package, install'
         type: string
         default: 'verify'
+      java-version:
+        description: 'This is the version of Java used for release.'
+        type: string
+        default: '21'
 
 jobs:
   build:
@@ -18,7 +22,7 @@ jobs:
 
     strategy:
       matrix:
-        java-version: [ '17' ]
+        java-version: [ ${{ inputs.java-version }} ]
 
     steps:
       - name: get branch name
