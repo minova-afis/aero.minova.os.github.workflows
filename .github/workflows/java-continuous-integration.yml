@@ -41,7 +41,8 @@ jobs:
 
     strategy:
       matrix:
-        java-version: [  '${{ inputs.java-version }}' ]
+        java-version:
+          - ${{ inputs.java-version }}
 
     steps:
       - name: get branch name
