@@ -101,11 +101,11 @@ jobs:
             --openapi-spec-file=${{ inputs.openapi-specification }} \
             --generator-output-dir=${{ inputs.openapi-generated-source-dir }}
 
-      - name: Set up JDK 21
+      - name: Set up JDK
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '17'
           cache: 'maven'
 
       - name: Maven build '${{ steps.prepare-template-directory.outputs.version }}' (CAS style)
