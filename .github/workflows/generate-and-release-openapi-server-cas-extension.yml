@@ -86,7 +86,7 @@ jobs:
             -Dsonar.branch.name=${{steps.branch-name.outputs.current_branch}}
 
       - name: generate API for server/SpringBoot
-        uses: docker://openapitools/openapi-generator-cli:v6.6.0
+        uses: docker://openapitools/openapi-generator-cli:v7.0.1
         with:
           entrypoint: /usr/local/bin/docker-entrypoint.sh
           args: generate -i ${{ inputs.openapi-specification }} -g spring -o ${{ inputs.openapi-generated-source-dir }} -c ${{ inputs.openapi-config }}
@@ -101,11 +101,11 @@ jobs:
             --openapi-spec-file=${{ inputs.openapi-specification }} \
             --generator-output-dir=${{ inputs.openapi-generated-source-dir }}
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
           cache: 'maven'
 
       - name: Maven build '${{ steps.prepare-template-directory.outputs.version }}' (CAS style)

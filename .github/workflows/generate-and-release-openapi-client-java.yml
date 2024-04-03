@@ -36,16 +36,16 @@ jobs:
           fi
 
       - name: generate API for client/Java
-        uses: docker://openapitools/openapi-generator-cli:v6.6.0
+        uses: docker://openapitools/openapi-generator-cli:v7.0.1
         with:
           entrypoint: /usr/local/bin/docker-entrypoint.sh
           args: generate -i ${{ inputs.openapi-specification }} -g java -o . -c ${{ inputs.openapi-config }}
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
           cache: 'maven'
 
       - name: Build with Maven

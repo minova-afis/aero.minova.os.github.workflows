@@ -25,7 +25,7 @@ on:
         default: 'ghcr.io'
       java-version:
         type: string
-        default: '17' 
+        default: '21'
     outputs:
       container-image:
         description: "Fully qualified name of the prepared container image"
@@ -76,6 +76,7 @@ jobs:
           id=$(docker create ghcr.io/minova-afis/dependency-check-action:latest)
           mkdir -p ~/.m2/repository/org/owasp/dependency-check-data
           docker cp $id:/usr/share/dependency-check/data ~/.m2/repository/org/owasp/dependency-check-data/7.0
+          docker cp $id:/usr/share/dependency-check/data ~/.m2/repository/org/owasp/dependency-check-data/9.0
           docker rm -v $id
         env:
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}

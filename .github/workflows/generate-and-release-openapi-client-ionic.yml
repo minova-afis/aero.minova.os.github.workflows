@@ -40,7 +40,7 @@ jobs:
           fi
 
       - name: Generate API for client in TypeScript-Angular
-        uses: docker://openapitools/openapi-generator-cli:v6.6.0
+        uses: docker://openapitools/openapi-generator-cli:v7.0.1
         with:
           entrypoint: /usr/local/bin/docker-entrypoint.sh
           args: generate -i ${{ inputs.openapi-specification }} -g typescript-angular -o . -c ${{ inputs.openapi-config }} --git-host github.com --git-user-id ${{ github.repository_owner }} --git-repo-id ${{ github.event.repository.name }}
