@@ -17,11 +17,7 @@ type OpenAPISpec struct {
 
 type Config struct {
 	Debug                     bool
-	DryRun                    bool
 	OpenApiSpecFile           string
-	GeneratorOutputDir        string
-	CasTemplateDir            string
-	CasTemplateOpenApiPomFile string
 	ShowHelp                  bool
 }
 

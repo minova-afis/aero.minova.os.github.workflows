@@ -1,9 +1,8 @@
 ## Preconditions
-* Install Bitnami's Sealed Secrets: ...
 * GOlang: `brew install golang`
 ### Prepare the GOlang program
 ```shell
-go mod init extract-version
+go mod init prepare-template-directory
 go mod tidy
 go get gopkg.in/yaml.v3
 ```

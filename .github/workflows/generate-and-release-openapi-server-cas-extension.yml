@@ -32,7 +32,7 @@ jobs:
     steps:
       - name: Get branch name
         id: branch-name
-        uses: tj-actions/branch-names@v7.0.7
+        uses: tj-actions/branch-names@v8.0.1
 
       - name: Checkout repository (read-only)
         if: steps.branch-name.outputs.ref_branch != 'main'
@@ -65,7 +65,7 @@ jobs:
           path: 'workflows'
 
       - name: prepare GOlang
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
 
       - name: Extract version from OpenAPI specification
         id: extract-version
