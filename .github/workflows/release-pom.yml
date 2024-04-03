@@ -6,6 +6,10 @@ on:
         description: 'Version string of this release'
         type: string
         required: true
+      java-version:
+        description: 'This is the version of Java used for release.'
+        type: string
+        default: '21'
 
 jobs:
   release:
@@ -14,7 +18,8 @@ jobs:
 
     strategy:
       matrix:
-        java-version: ['17']
+        java-version:
+          - ${{inputs.java-version}}
 
     steps:
       - name: checkout repository
@@ -24,7 +29,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: ${{ matrix.java-version }}
+          java-version: ${{matrix.java-version}}
           java-package: 'jdk'
           cache: 'maven'
 

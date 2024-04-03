@@ -10,6 +10,10 @@ on:
         description: 'Configuration file in JSON format used by the OpenAPI generator'
         type: string
         default: 'spring.config.json'
+      java-version:
+        description: 'This is the version of Java used for release.'
+        type: string
+        default: '21'
 
 jobs:
   generate-server-springboot:
@@ -57,7 +61,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: ${{inputs.java-version}}
           cache: 'maven'
 
       - name: Build with Maven

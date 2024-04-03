@@ -18,14 +18,14 @@ on:
         description: 'Folder of the software project to be released in the repo.'
         type: string
         default: './'
-      java-version:
-        description: 'This is the version of Java used for release.'
-        type: string
-        default: '17'
       release-version:
         description: 'Version string of this release'
         type: string
         required: true
+      java-version:
+        description: 'This is the version of Java used for release.'
+        type: string
+        default: '21'
     outputs:
       container-image:
         description: "Fully qualified name of the prepared container image"
@@ -40,7 +40,8 @@ jobs:
 
     strategy:
       matrix:
-        java-version: ['17']
+        java-version:
+          - ${{inputs.java-version}}
 
     steps:
       - name: checkout repository

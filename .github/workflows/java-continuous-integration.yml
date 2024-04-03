@@ -25,7 +25,7 @@ on:
         default: 'ghcr.io'
       java-version:
         type: string
-        default: '17'
+        default: '21'
     outputs:
       container-image:
         description: "Fully qualified name of the prepared container image"
@@ -41,7 +41,8 @@ jobs:
 
     strategy:
       matrix:
-        java-version: [  '${{ inputs.java-version }}' ]
+        java-version:
+          - ${{ inputs.java-version }}
 
     steps:
       - name: get branch name
