@@ -11,6 +11,10 @@ on:
         description: "Fully qualified name of the prepared container image"
         type: string
         required: true
+      triggered-by:
+        description: "Username of Git committer"
+        type: string
+        required: false
       email-address:
         description: 'e-mail address of Git committer'
         required: true
