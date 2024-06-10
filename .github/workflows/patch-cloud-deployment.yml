@@ -53,7 +53,7 @@ jobs:
           cat "${{ inputs.patch-file }}" | sed -e "s@image:.*@image: ${{ inputs.container-image }}@g" | tee "${{ inputs.patch-file }}.tmp" || (echo "Sed: Unable to replace image name with ${{ inputs.container-image }}" && exit 2)
           mv "${{ inputs.patch-file }}.tmp" "${{ inputs.patch-file }}" || (echo "Move: Unable to overwrite ${{ inputs.patch-file }}" && exit 3)
           git config --global user.email "${{ inputs.email-address }}" || (echo "Git: Unable to set user.email to ${{ inputs.email-address }}" && exit 4)
-          git config --global user.name "${{ inputs.email-address }}" || (echo "Git: Unable to set user.name to ${{ inputs.email-address }}" && exit 5)
+          git config --global user.name "${{ inputs.email-address }}" || git config --global user.name "${{ inputs.triggered-by }}" || (echo "Git: Unable to set user.name to ${{ inputs.email-address }}" && exit 5)
           git add . || (echo "Git: Unable to add changed files" && exit 6)
           git commit -m "Promoting to container ${{ inputs.container-image }}" || (echo "Git: Unable to commit files" && exit 7)
           git push || (echo "Git: Unable to push" && exit 8)
