@@ -63,7 +63,6 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
           name: minova-afis/aero.minova.github.workflows.log
-          ref: refs/heads/release
           path: 'target/aero.minova.github.workflows.log'
 
       - name: set up JDK
