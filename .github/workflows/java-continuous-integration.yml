@@ -88,6 +88,8 @@ jobs:
           # wget --header="Authorization: Bearer ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}" -O todeploy/mobilelink/aero.minova.${package}.jar ${jarURL}
           curl -L --request GET --url ${jarURL} -o target/rico-workflow/aero.minova.${package}.jar --header 'authorization: Bearer ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}'
 
+          java -jar target/rico-workflow/aero.minova.${package}.jar --project-folder=./
+
       - name: cache SonarQube packages
         uses: actions/cache@v4
         with:
