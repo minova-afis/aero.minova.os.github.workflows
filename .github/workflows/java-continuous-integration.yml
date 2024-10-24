@@ -66,7 +66,7 @@ jobs:
           java-package: 'jdk'
           cache: 'maven'
 
-      - name: Copy latest mobilelink
+      - name: Check repo with Rico.
         if: inputs.check-via-rico == true
         run: |
           mkdir -p target/rico-workflow
@@ -80,7 +80,7 @@ jobs:
           version=$(sed -n -e 's/.*<latest>\(.*\)<\/latest>.*/\1/p' < "target/version.xml")
           echo "Latest version of ${package} is ${version}"
           
-          jarURL="https://maven.pkg.github.com/minova-afis/aero.minova.maven.root/aero.minova/${package}/${version}/${package}-${version}.jar"
+          jarURL="https://maven.pkg.github.com/minova-afis/aero.minova.maven.root/aero.minova/${package}/${version}/${package}-jar-with-dependencies-${version}.jar"
           echo "Download ${jarURL} -> target/rico-workflow/aero.minova.${package}.jar"
           
           # Dombrovski: there is a problem storing downloaded files with defined names if the downloaded File has actually a different name as defined in the URL
