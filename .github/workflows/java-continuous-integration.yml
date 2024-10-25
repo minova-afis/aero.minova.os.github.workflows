@@ -23,10 +23,6 @@ on:
         description: 'Container registry to be used, e.g. ghcr.io, docker.io'
         type: string
         default: 'ghcr.io'
-      check-via-rico:
-        description: "Determines whether the Rico workflow is used, in order to check, if the repo complies with Minova's repo policies."
-        type: boolean
-        default: true
       java-version:
         type: string
         default: '21'
@@ -58,13 +54,6 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
-      - name: Checkout repository for workflow logs
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-          name: minova-afis/aero.minova.github.workflows.log
-          path: 'target/aero.minova.github.workflows.log'
-
       - name: set up JDK
         uses: actions/setup-java@v4
         with:
@@ -72,30 +61,6 @@ jobs:
           java-version: ${{ matrix.java-version }}
           java-package: 'jdk'
           cache: 'maven'
-
-      - name: Check repo with Rico.
-        if: inputs.check-via-rico == true
-        run: |
-          mkdir -p target/rico-workflow
-          
-          # Find latest version...
-          package="github.workflows.rico"
-          metaURL="https://maven.pkg.github.com/minova-afis/aero.minova.maven.root/aero.minova/${package}/maven-metadata.xml"
-          echo "Detect latest version in ${metaURL}"
-          curl --request GET --url ${metaURL} --output target/version.xml --header 'authorization: Bearer ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}'
-          [ -f target/version.xml ] || (echo "version.xml download failed: ${metaURL}" && exit 1)
-          version=$(sed -n -e 's/.*<latest>\(.*\)<\/latest>.*/\1/p' < "target/version.xml")
-          echo "Latest version of ${package} is ${version}"
-          
-          jarURL="https://maven.pkg.github.com/minova-afis/aero.minova.maven.root/aero.minova/${package}/${version}/${package}-${version}-jar-with-dependencies.jar"
-          echo "Download ${jarURL} -> target/rico-workflow/aero.minova.${package}.jar"
-          
-          # Dombrovski: there is a problem storing downloaded files with defined names if the downloaded File has actually a different name as defined in the URL
-          # Therefore we download the yet uknown named file into a tempeorary directory, rename it and eventually move it to the actual target directory 
-          # wget --header="Authorization: Bearer ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}" -O todeploy/mobilelink/aero.minova.${package}.jar ${jarURL}
-          curl -L --request GET --url ${jarURL} -o target/rico-workflow/aero.minova.${package}.jar --header 'authorization: Bearer ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}'
-
-          java -jar target/rico-workflow/aero.minova.${package}.jar --project-folder=./
 
       - name: cache SonarQube packages
         uses: actions/cache@v4
