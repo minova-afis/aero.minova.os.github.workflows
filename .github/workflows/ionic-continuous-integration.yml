@@ -94,5 +94,3 @@ jobs:
           registry: ${{ inputs.registry }}
           username: ${{ secrets.GHCR_USERNAME }}
           password: ${{ secrets.GHCR_PASSWORD }}
-          buildArgs: |
-            GITHUB_TOKEN=${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
