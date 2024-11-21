@@ -85,7 +85,7 @@ jobs:
 
       - name: build & push container image '${{ steps.container-name-and-githash.outputs.container-image }}'
         if: inputs.do-containerize == true && steps.branch-name.outputs.ref_branch == 'main' && github.event_name != 'pull_request'
-        uses: mr-smithers-excellent/docker-build-push@v6.3
+        uses: mr-smithers-excellent/docker-build-push@v6.4
         with:
           image: ${{github.event.repository.name}}
           addLatest: true
