@@ -83,16 +83,34 @@ jobs:
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_PASSWORD: ${{ secrets.GHCR_PASSWORD }}
 
-      - name: Maven build and SonarQube scan
+      - name: Maven build
         run: |
           mvn --batch-mode --no-transfer-progress \
             -P repo-github -P all-tests \
             ${{ inputs.maven-goal }} \
             org.owasp:dependency-check-maven:${{ inputs.dependency-check-goal }} -DautoUpdate=${{inputs.dependency-check-auto-update}} \
-            sonar:sonar \
             -Dusername=$GITHUB_ACCESS_TOKEN \
             -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} \
             -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            --file pom.xml \
+            --settings .github/settings.xml
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+
+      - name: set up JDK 21 for Sonar Scan
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+          java-package: 'jdk'
+          cache: 'maven'
+
+      - name: SonarQube scan
+        run: |
+          mvn --batch-mode --no-transfer-progress \
+            sonar:sonar \
             -Dsonar.projectKey=${{github.repository_owner}}_${{github.event.repository.name}} \
             -Dsonar.branch.name=${{steps.branch-name.outputs.current_branch}} \
             --file pom.xml \
