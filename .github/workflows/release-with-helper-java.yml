@@ -62,7 +62,7 @@ jobs:
             --update-snapshots verify \
             --file client/pom.xml \
             --settings .github/settings.xml
-          rm app/src/main/app/plugins/*
+          rm ${{ inputs.app-target-directory }}/*
           cp -av ${{ inputs.client-target-directory }}/*.jar ${{ inputs.app-target-directory }}
           git config user.email "service@minova.com"
           git config user.name "minova-worker"
