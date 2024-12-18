@@ -14,7 +14,7 @@ on:
         description: "Directory where helper's *.jar files should end up"
         type: string
         required: true
-        default: 'app/src/main/app/plugins/'
+        default: 'app/src/main/app/plugins'
       java-version:
         description: 'This is the version of Java used for release.'
         type: string
@@ -62,7 +62,7 @@ jobs:
             --file client/pom.xml \
             --settings .github/settings.xml
           rm ${{ inputs.app-target-directory }}/*
-          cp -av ${{ inputs.client-target-directory }}/*.jar ${{ inputs.app-target-directory }}
+          cp -av ${{ inputs.client-target-directory }}/*.jar ${{ inputs.app-target-directory }}/
           git config user.email "service@minova.com"
           git config user.name "minova-worker"
           git add . 
