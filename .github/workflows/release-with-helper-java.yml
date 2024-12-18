@@ -19,16 +19,15 @@ on:
         description: 'This is the version of Java used for release.'
         type: string
         default: '21'
+      helper-java-version:
+        description: 'This is the version of Java used for the helper.'
+        type: string
+        default: '17'
 
 jobs:
   release:
     name: release with helper
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        java-version:
-        - ${{inputs.java-version }}
 
     steps:
       - name: checkout repository
@@ -36,11 +35,11 @@ jobs:
         with:
           token: ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}
 
-      - name: set up JDK
+      - name: set up JDK for Helper
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: ${{matrix.java-version}}
+          java-version: ${{inputs.helper-java-version }}
           java-package: 'jdk'
           cache: 'maven'
 
@@ -72,6 +71,14 @@ jobs:
         env:
           MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
           MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+
+      - name: set up JDK for main release
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{inputs.java-version }}
+          java-package: 'jdk'
+          cache: 'maven'
 
       - name: Maven release '${{ inputs.release-version }}'
         shell: bash
