@@ -13,7 +13,6 @@ on:
       app-target-directory:
         description: "Directory where helper's *.jar files should end up"
         type: string
-        required: true
         default: 'app/src/main/app/plugins'
       java-version:
         description: 'This is the version of Java used for release.'
