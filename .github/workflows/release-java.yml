@@ -1,4 +1,5 @@
-name: release V12 applications
+name: Release V12 applications
+run-name: Release V12 applications ${{ inputs.release-version }}
 on:
   workflow_call:
     inputs:
