@@ -14,7 +14,7 @@ on:
 
 jobs:
   Release:
-    uses: minova-afis/aero.minova.os.github.workflows/.github/workflows/release-module.yml@main
+    uses: minova-afis/aero.minova.os.github.workflows/.github/workflows/release-java.yml@main
     secrets: inherit
     with:
       do-containerize: false
