@@ -18,5 +18,5 @@ jobs:
     secrets: inherit
     with:
       do-containerize: false
-      java-version: ${{ github.event.inputs.java-version }}
-      release-version: ${{ github.event.inputs.release-version }}
+      java-version: ${{ inputs.java-version }}
+      release-version: ${{ inputs.release-version }}
