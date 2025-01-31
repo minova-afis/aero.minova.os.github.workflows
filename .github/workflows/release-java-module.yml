@@ -6,12 +6,12 @@ on:
       release-version:
         description: 'Version string of this release'
         type: string
-        required: false
       java-version:
         description: 'This is the version of Java used for release.'
         type: string
         default: '8'
-
+        required: false
+        
 jobs:
   Release:
     uses: minova-afis/aero.minova.os.github.workflows/.github/workflows/release-java.yml@main
