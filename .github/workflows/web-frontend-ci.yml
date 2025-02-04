@@ -1,4 +1,4 @@
-name: Ionic Continuous Integration
+name: Web Frontend Continuous Integration
 
 on:
   workflow_call:
