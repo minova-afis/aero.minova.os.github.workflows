@@ -43,7 +43,8 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
 
       - name: Install dependencies
-        run: npm install --save-dev @kubb/cli @kubb/core @kubb/plugin-oas @kubb/plugin-ts @kubb/plugin-client
+        run: |
+          npm ci
 
       - name: Generate API client using Kubb
         run: npx kubb
