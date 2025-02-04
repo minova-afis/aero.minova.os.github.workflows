@@ -123,13 +123,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Skip commits by 'maven-release-plugin'
+      - name: Download OpenAPI Specification
         run: |
-          commit_message=$(git log -1 --pretty=%B)
-          if [[ $commit_message == *"[maven-release-plugin]"* ]]; then
-            echo "Commit initiated by 'maven-release-plugin'. Skipping workflow..."
-            exit 78
-          fi
+          curl -H "Authorization: token ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}" -o openapi.yml "https://raw.githubusercontent.com/minova-afis/aero.minova.afis.fuelportal.openapi/main/fuelportal-openapi.yml"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -142,7 +138,7 @@ jobs:
           npm ci
 
       - name: Generate API client using Kubb
-        run: npx kubb
+        run: npx kubb --spec openapi.yml
 
       - name: Publish NPM package
         if: steps.branch-name.outputs.ref_branch == 'main'
