@@ -58,10 +58,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-modules-
 
-      - name: Install dependencies
+      - name: Install dependencies (ci fallback)
         run: |
-          cd app 
-          npm install --legacy-peer-deps
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "⚠️ package-lock.json not found, using npm install"
+            npm install --legacy-peer-deps
+          fi
+      
 
       - name: Test and coverage
         run: |
@@ -133,9 +138,15 @@ jobs:
           node-version: 20
           registry-url: 'https://npm.pkg.github.com'
 
-      - name: Install dependencies
+      - name: Install dependencies (ci fallback)
         run: |
-          npm ci
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "⚠️ package-lock.json not found, using npm install"
+            npm install --legacy-peer-deps
+          fi
+  
 
       - name: Generate API client using Kubb
         run: npx kubb --spec openapi.yml
