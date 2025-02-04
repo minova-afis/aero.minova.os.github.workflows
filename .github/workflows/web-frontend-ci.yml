@@ -15,14 +15,6 @@ on:
         description: "Container registry to be used, e.g. ghcr.io, docker.io"
         type: string
         default: "ghcr.io"
-      openapi-specification:
-        description: "OpenAPI specification in YAML format used by kubb.dev"
-        type: string
-        required: true
-      base-package-as-path:
-        description: "Path where the generated client should be stored"
-        type: string
-        required: true
     outputs:
       container-image:
         description: "Fully qualified name of the prepared container image"
@@ -107,46 +99,3 @@ jobs:
           registry: ${{ inputs.registry }}
           username: ${{ secrets.GHCR_USERNAME }}
           password: ${{ secrets.GHCR_PASSWORD }}
-
-  generate-client-typescript:
-    name: Generate TypeScript Client with Kubb
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Get branch name
-        id: branch-name
-        uses: tj-actions/branch-names@v8.0.1
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download OpenAPI Specification
-        run: |
-          curl -H "Authorization: token ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}" -o openapi.yml "https://raw.githubusercontent.com/minova-afis/aero.minova.afis.fuelportal.openapi/main/fuelportal-openapi.yml"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          registry-url: 'https://npm.pkg.github.com'
-
-      - name: Install dependencies
-        run: |
-          cd app
-          npm install --legacy-peer-deps
-
-      - name: Generate API client using Kubb
-        run: |
-          cd app
-          npx kubb --spec ../openapi.yml
-
-      - name: Publish NPM package
-        if: steps.branch-name.outputs.ref_branch == 'main'
-        run: |
-          cd ${{ inputs.base-package-as-path }}
-          npm publish --ignore-scripts
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
