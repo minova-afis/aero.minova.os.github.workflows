@@ -60,6 +60,7 @@ jobs:
 
       - name: Install dependencies (ci fallback)
         run: |
+          cd app
           if [ -f package-lock.json ]; then
             npm ci
           else
@@ -140,12 +141,14 @@ jobs:
 
       - name: Install dependencies (ci fallback)
         run: |
+          cd app
           if [ -f package-lock.json ]; then
             npm ci
           else
             echo "⚠️ package-lock.json not found, using npm install"
             npm install --legacy-peer-deps
           fi
+  
   
 
       - name: Generate API client using Kubb
