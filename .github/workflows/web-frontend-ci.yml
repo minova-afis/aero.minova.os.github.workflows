@@ -15,6 +15,14 @@ on:
         description: "Container registry to be used, e.g. ghcr.io, docker.io"
         type: string
         default: "ghcr.io"
+      openapi-specification:
+        description: "OpenAPI specification in YAML format used by kubb.dev"
+        type: string
+        required: true
+      base-package-as-path:
+        description: "Path where the generated client should be stored"
+        type: string
+        required: true
     outputs:
       container-image:
         description: "Fully qualified name of the prepared container image"
@@ -54,6 +62,15 @@ jobs:
         run: |
           cd app
           npm install --legacy-peer-deps
+
+      - name: Download OpenAPI Specification
+        run: |
+          curl -H "Authorization: token ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}" -o openapi.yml "${{ inputs.openapi-specification }}"
+
+      - name: Generate API client using Kubb
+        run: |
+          cd app
+          npx kubb --spec ../openapi.yml
 
       - name: Test and coverage
         run: |
