@@ -85,15 +85,26 @@ jobs:
 
       - name: Maven build
         run: |
-          mvn --batch-mode --no-transfer-progress \
-            -P repo-github -P all-tests \
-            ${{ inputs.maven-goal }} \
-            org.owasp:dependency-check-maven:${{ inputs.dependency-check-goal }} -DautoUpdate=${{inputs.dependency-check-auto-update}} \
-            -Dusername=$GITHUB_ACCESS_TOKEN \
-            -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} \
-            -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
-            --file pom.xml \
-            --settings .github/settings.xml
+          if [ github.actor == 'dependabot[bot]' ]; then
+            mvn --batch-mode --no-transfer-progress \
+              -P repo-github -P all-tests \
+              ${{ inputs.maven-goal }} \
+              -Dusername=$GITHUB_ACCESS_TOKEN \
+              -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} \
+              -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+              --file pom.xml \
+              --settings .github/settings.xml;
+          else
+            mvn --batch-mode --no-transfer-progress \
+              -P repo-github -P all-tests \
+              ${{ inputs.maven-goal }} \
+              org.owasp:dependency-check-maven:${{ inputs.dependency-check-goal }} -DautoUpdate=${{inputs.dependency-check-auto-update}} \
+              -Dusername=$GITHUB_ACCESS_TOKEN \
+              -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} \
+              -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+              --file pom.xml \
+              --settings .github/settings.xml;
+          fi
         env:
           MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
           MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
