@@ -83,9 +83,9 @@ jobs:
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_PASSWORD: ${{ secrets.GHCR_PASSWORD }}
 
-      - name: Maven build
+      - if: github.actor == 'dependabot[bot]'
+        name: Maven build (for dependabot)
         run: |
-          if [ github.actor == 'dependabot[bot]' ]; then
             mvn --batch-mode --no-transfer-progress \
               -P repo-github -P all-tests \
               ${{ inputs.maven-goal }} \
@@ -93,8 +93,15 @@ jobs:
               -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} \
               -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
               --file pom.xml \
-              --settings .github/settings.xml;
-          else
+              --settings .github/settings.xml
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+
+      - if: github.actor != 'dependabot[bot]'
+        name: Maven build (not dependabot, including org.owasp:dependency-check-maven)
+        run: |
             mvn --batch-mode --no-transfer-progress \
               -P repo-github -P all-tests \
               ${{ inputs.maven-goal }} \
@@ -103,8 +110,7 @@ jobs:
               -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} \
               -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
               --file pom.xml \
-              --settings .github/settings.xml;
-          fi
+              --settings .github/settings.xml
         env:
           MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
           MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
