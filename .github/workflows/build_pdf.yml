@@ -1,0 +1,24 @@
+name: Trigger PDF Build in ch.minova.doku
+
+on:
+  workflow_dispatch:
+    inputs:
+      projektname:
+        description: Projektname im doku-Repo
+        required: true
+        type: string
+
+jobs:
+  trigger-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: GitHub Action in ch.minova.doku triggern
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          repository: MINOVA-ORG/ch.minova.doku
+          event-type: build-pdf
+          client-payload: |
+            {
+              "projektname": "${{ github.event.inputs.projektname }}"
+            }
