@@ -4,8 +4,24 @@ on:
   workflow_dispatch:
     inputs:
       projektname:
-        description: Name des Projekts im Unterordner `projekte/` von ch.minova.doku
+        description: Projektname im Unterordner `projekte/`
         required: true
+        type: string
+      titel:
+        description: Dokumenttitel (title in metadata.yml)
+        required: true
+        type: string
+      autor:
+        description: Autor (author in metadata.yml)
+        required: true
+        type: string
+      firma:
+        description: Firma (company in metadata.yml)
+        required: true
+        type: string
+      datum:
+        description: Datum (z. B. 14.07.2025)
+        required: false
         type: string
 
 jobs:
@@ -21,5 +37,9 @@ jobs:
           event-type: build-pdf
           client-payload: |
             {
-              "projektname": "${{ github.event.inputs.projektname }}"
+              "projektname": "${{ github.event.inputs.projektname }}",
+              "title": "${{ github.event.inputs.titel }}",
+              "author": "${{ github.event.inputs.autor }}",
+              "company": "${{ github.event.inputs.firma }}",
+              "date": "${{ github.event.inputs.datum }}"
             }
