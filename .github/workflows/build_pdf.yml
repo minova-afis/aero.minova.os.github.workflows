@@ -1,4 +1,4 @@
-name: Trigger PDF Build in ch.minova.doku
+name: Create PDF from doc
 
 on:
   workflow_dispatch:
@@ -8,38 +8,82 @@ on:
         required: true
         type: string
       titel:
-        description: Dokumenttitel (title in metadata.yml)
+        description: Dokumenttitel
         required: true
         type: string
       autor:
-        description: Autor (author in metadata.yml)
+        description: Autor
         required: true
         type: string
       firma:
-        description: Firma (company in metadata.yml)
+        description: Firma
         required: true
         type: string
       datum:
-        description: Datum (z. B. 14.07.2025)
+        description: Datum (optional, z. B. 15.07.2025)
         required: false
         type: string
 
 jobs:
-  trigger-build:
+  build-pdf:
     runs-on: ubuntu-latest
 
     steps:
-      - name: GitHub Action in ch.minova.doku triggern
-        uses: peter-evans/repository-dispatch@v3
+      - name: Repository klonen
+        uses: actions/checkout@v4
+
+      - name: Python installieren
+        uses: actions/setup-python@v5
         with:
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          repository: minova-afis/ch.minova.doku
-          event-type: build-pdf
-          client-payload: |
-            {
-              "projektname": "${{ github.event.inputs.projektname }}",
-              "title": "${{ github.event.inputs.titel }}",
-              "author": "${{ github.event.inputs.autor }}",
-              "company": "${{ github.event.inputs.firma }}",
-              "date": "${{ github.event.inputs.datum }}"
-            }
+          python-version: '3.11'
+
+      - name: Abhängigkeiten für WeasyPrint installieren
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libpango-1.0-0 \
+            libgdk-pixbuf2.0-0 \
+            libffi-dev \
+            libcairo2 \
+            libpangoft2-1.0-0 \
+            libpangocairo-1.0-0 \
+            libgdk-pixbuf2.0-dev \
+            libxml2 \
+            libxslt1.1
+          pip install weasyprint pyyaml
+
+      - name: Pandoc installieren
+        run: |
+          sudo apt-get install -y pandoc
+
+      - name: Projektverzeichnis prüfen
+        run: |
+          if [ ! -d "projekte/${{ github.event.inputs.projektname }}" ]; then
+            echo "❌ Projektordner 'projekte/${{ github.event.inputs.projektname }}' nicht gefunden."
+            exit 1
+          fi
+
+      - name: metadata.yml erzeugen
+        run: |
+          cat > projekte/${{ github.event.inputs.projektname }}/metadata.yml <<EOF
+          title: "${{ github.event.inputs.titel }}"
+          author: "${{ github.event.inputs.autor }}"
+          company: "${{ github.event.inputs.firma }}"
+          date: "${{ github.event.inputs.datum }}"
+          company_code: "${{ github.event.inputs.firma }}"
+          EOF
+
+      - name: metadata.yml anzeigen (Debug)
+        run: |
+          cat projekte/${{ github.event.inputs.projektname }}/metadata.yml
+
+      - name: PDF erzeugen
+        run: |
+          python build_from_index.py ${{ github.event.inputs.projektname }}
+
+      - name: PDF-Ergebnis als Artifact bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: PDF-${{ github.event.inputs.projektname }}
+          path: projekte/${{ github.event.inputs.projektname }}/output/
