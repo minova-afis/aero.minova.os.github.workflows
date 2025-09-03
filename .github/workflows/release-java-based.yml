@@ -65,7 +65,7 @@ jobs:
           git config --global user.email "service@minova.com"
           git config --global user.name "minova-worker"
           cd $GITHUB_WORKSPACE/${{inputs.folder}}
-          if [ "${{ inputs.container-name }}" = "patch" ]; then
+          if [ "${{ inputs.release-type }}" = "patch" ]; then
             echo "Releasing patch"
             
             mvn --batch-mode --no-transfer-progress \
@@ -77,7 +77,7 @@ jobs:
               -Darguments="-DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
               --settings $GITHUB_WORKSPACE/.github/settings.xml
           fi
-          if [ "${{ inputs.container-name }}" = "minor" ]; then
+          if [ "${{ inputs.release-type }}" = "minor" ]; then
             echo "Releasing minor"
             
             current=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
@@ -99,7 +99,7 @@ jobs:
               -Darguments="-DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
               --settings $GITHUB_WORKSPACE/.github/settings.xml
           fi
-          if [ "${{ inputs.container-name }}" = "major" ]; then
+          if [ "${{ inputs.release-type }}" = "major" ]; then
             echo "Releasing major"
             echo "ERROR THIS IS NOT SUPPORTED YET!"
           fi
