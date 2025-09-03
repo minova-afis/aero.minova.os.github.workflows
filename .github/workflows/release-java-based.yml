@@ -78,7 +78,7 @@ jobs:
               --settings $GITHUB_WORKSPACE/.github/settings.xml
           fi
           if [ "${{ inputs.release-type }}" = "minor" ]; then
-            sex -x
+            set -x
             echo "Releasing minor"
             
             current=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
