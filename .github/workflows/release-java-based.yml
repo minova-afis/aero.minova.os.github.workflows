@@ -67,22 +67,42 @@ jobs:
           cd $GITHUB_WORKSPACE/${{inputs.folder}}
           if [ "${{ inputs.container-name }}" = "patch" ]; then
             echo "Releasing patch"
+            
+            mvn --batch-mode --no-transfer-progress \
+              -P repo-github \
+              release:prepare release:perform \
+              -Dusername=$GITHUB_ACCESS_TOKEN \
+              -Dpassword=$GITHUB_ACCESS_TOKEN \
+              -Darguments="-Dmaven.javadoc.skip=true" \
+              -Darguments="-DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+              --settings $GITHUB_WORKSPACE/.github/settings.xml
           fi
           if [ "${{ inputs.container-name }}" = "minor" ]; then
             echo "Releasing minor"
+            
+            current=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+            major=$(echo $current | cut -d. -f1)
+            minor=$(echo $current | cut -d. -f2)
+            next_minor=$((minor + 1))
+
+            release_version="${major}.${minor}.0"
+            development_version="${major}.${next_minor}.0-SNAPSHOT"
+
+            mvn --batch-mode --no-transfer-progress \
+              -P repo-github \
+              release:prepare release:perform \
+              -Dusername=$GITHUB_ACCESS_TOKEN \
+              -Dpassword=$GITHUB_ACCESS_TOKEN \
+              -DreleaseVersion=${release_version} \
+              -DdevelopmentVersion=${development_version} \
+              -Darguments="-Dmaven.javadoc.skip=true" \
+              -Darguments="-DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+              --settings $GITHUB_WORKSPACE/.github/settings.xml
           fi
           if [ "${{ inputs.container-name }}" = "major" ]; then
             echo "Releasing major"
+            echo "ERROR THIS IS NOT SUPPORTED YET!"
           fi
-
-          mvn --batch-mode --no-transfer-progress \
-            -P repo-github \
-            release:prepare release:perform \
-            -Dusername=$GITHUB_ACCESS_TOKEN \
-            -Dpassword=$GITHUB_ACCESS_TOKEN \
-            -Darguments="-Dmaven.javadoc.skip=true" \
-            -Darguments="-DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-            --settings $GITHUB_WORKSPACE/.github/settings.xml
         env:
           MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
           MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
