@@ -24,6 +24,7 @@ on:
         type: string
         description: Type of release
         required: true
+        # TODO Es wäre besser, wenn die Versions Bestimmung über `build-helper:prase-Version versions:set` gemacht werden würde, anstatt Bash zu verwenden: https://stackoverflow.com/a/51288092
       java-version:
         description: 'This is the version of Java used for release.'
         type: string
