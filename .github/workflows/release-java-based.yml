@@ -65,6 +65,16 @@ jobs:
           git config --global user.email "service@minova.com"
           git config --global user.name "minova-worker"
           cd $GITHUB_WORKSPACE/${{inputs.folder}}
+          if [ "${{ inputs.container-name }}" = "patch" ]; then
+            echo "Releasing patch"
+          fi
+          if [ "${{ inputs.container-name }}" = "minor" ]; then
+            echo "Releasing patch"
+          fi
+          if [ "${{ inputs.container-name }}" = "major" ]; then
+            echo "Releasing patch"
+          fi
+
           mvn --batch-mode --no-transfer-progress \
             -P repo-github \
             release:prepare release:perform \
