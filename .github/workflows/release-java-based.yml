@@ -69,10 +69,10 @@ jobs:
             echo "Releasing patch"
           fi
           if [ "${{ inputs.container-name }}" = "minor" ]; then
-            echo "Releasing patch"
+            echo "Releasing minor"
           fi
           if [ "${{ inputs.container-name }}" = "major" ]; then
-            echo "Releasing patch"
+            echo "Releasing major"
           fi
 
           mvn --batch-mode --no-transfer-progress \
