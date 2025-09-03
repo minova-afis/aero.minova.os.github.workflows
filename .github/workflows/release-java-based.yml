@@ -3,10 +3,11 @@ run-name: Release Java applications ${{ inputs.release-version }}
 on:
   workflow_call:
     inputs:
-      do-containerize:
-        description: 'Should CI flow create a container image?'
-        type: boolean
-        default: false
+# TODO do-containerize mit release-type zum laufen bringen.
+#      do-containerize:
+#        description: 'Should CI flow create a container image?'
+#        type: boolean
+#        default: false
       container-name:
         description: 'Alternative name for the container-image, otherwise \$github.event.repository.name'
         type: string
@@ -19,10 +20,6 @@ on:
         description: 'Folder of the software project to be released in the repo.'
         type: string
         default: './'
-      release-version:
-        description: 'Version string of this release'
-        type: string
-        required: true
       release-type:
         type: choice
         description: Type of release
@@ -65,7 +62,7 @@ jobs:
           java-package: 'jdk'
           cache: 'maven'
 
-      - name: Maven release '${{ inputs.release-version }}'
+      - name: Maven release '${{ inputs.release-type }}'
         shell: bash
         run: |
           git config --global user.email "service@minova.com"
@@ -76,7 +73,6 @@ jobs:
             release:prepare release:perform \
             -Dusername=$GITHUB_ACCESS_TOKEN \
             -Dpassword=$GITHUB_ACCESS_TOKEN \
-            -DreleaseVersion=${{ inputs.release-version }} \
             -Darguments="-Dmaven.javadoc.skip=true" \
             -Darguments="-DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
             --settings $GITHUB_WORKSPACE/.github/settings.xml
@@ -92,15 +88,5 @@ jobs:
         run: |
           GITHUB_SHA_SHORT=$(git rev-parse --short HEAD)
           echo "github_sha_short=$GITHUB_SHA_SHORT" >> $GITHUB_OUTPUT
-          echo "container-image=${{inputs.registry}}/${{github.repository_owner}}/${{ inputs.container-name }}:${{ inputs.release-version }}" >> $GITHUB_OUTPUT
+          echo "container-image=${{inputs.registry}}/${{github.repository_owner}}/${{ inputs.container-name }}:${{ inputs.release-type }}" >> $GITHUB_OUTPUT
 
-      - name: build & push container image '${{ steps.container-name-and-githash.outputs.container-image }}'
-        if: inputs.do-containerize == true
-        uses: mr-smithers-excellent/docker-build-push@v6
-        with:
-          image: ${{ inputs.container-name }}
-          addLatest: true
-          tags: ${{ inputs.release-version }}, latest
-          registry: ${{ inputs.registry }}
-          username: ${{ secrets.GHCR_USERNAME }}
-          password: ${{ secrets.GHCR_PASSWORD }}
