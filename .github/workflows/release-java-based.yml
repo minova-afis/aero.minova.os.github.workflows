@@ -90,7 +90,7 @@ jobs:
             next_minor=$((minor + 1))
             echo Next Minor: $next_minor
 
-            release_version="${major}.${minor}.0"
+            release_version="${major}.${next_minor}.0"
             echo Release Version: $release_version
             development_version="${major}.${next_minor}.0-SNAPSHOT"
             echo Development version: $development_version
