@@ -67,12 +67,29 @@ jobs:
           cd $GITHUB_WORKSPACE/${{inputs.folder}}
           if [ "${{ inputs.release-type }}" = "Patch" ]; then
             echo "Releasing patch"
+
+            current=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout --settings $GITHUB_WORKSPACE/.github/settings.xml)
+            echo Current: $current
+            major=$(echo $current | cut -d. -f1)
+            echo Major: $major
+            minor=$(echo $current | cut -d. -f2)
+            echo Minor: $minor
+            patch=$(echo $current | cut -d. -f3)
+            echo Patch: $patch
+            next_patch=$((patch + 1))
+            echo Next Patch: $next_patch
+
+            release_version="${major}.${minor}.${next_patch}"
+            echo Release Version: $release_version
+            development_version="${major}.${minor}.${next_patch}-SNAPSHOT"
+            echo Development version: $development_version
             
             mvn --batch-mode --no-transfer-progress \
               -P repo-github \
               release:prepare release:perform \
               -Dusername=$GITHUB_ACCESS_TOKEN \
               -Dpassword=$GITHUB_ACCESS_TOKEN \
+              -DreleaseVersion=${release_version} \
               -Darguments="-Dmaven.javadoc.skip=true" \
               -Darguments="-DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
               --settings $GITHUB_WORKSPACE/.github/settings.xml
