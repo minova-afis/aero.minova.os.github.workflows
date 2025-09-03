@@ -1,4 +1,4 @@
-name: Release Java applications ${{ inputs.release-type }}
+name: Release Java applications
 run-name: Release Java applications ${{ inputs.release-type }}
 on:
   workflow_call:
