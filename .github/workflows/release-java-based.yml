@@ -81,7 +81,7 @@ jobs:
             set -x
             echo "Releasing minor"
             
-            current=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+            current=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout --settings $GITHUB_WORKSPACE/.github/settings.xml)
             echo Current: $current
             major=$(echo $current | cut -d. -f1)
             echo Major: $major
