@@ -78,15 +78,22 @@ jobs:
               --settings $GITHUB_WORKSPACE/.github/settings.xml
           fi
           if [ "${{ inputs.release-type }}" = "minor" ]; then
+            sex -x
             echo "Releasing minor"
             
             current=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+            echo Current: $current
             major=$(echo $current | cut -d. -f1)
+            echo Major: $major
             minor=$(echo $current | cut -d. -f2)
+            echo Minor: $minor
             next_minor=$((minor + 1))
+            echo Next Minor: $next_minor
 
             release_version="${major}.${minor}.0"
+            echo Release Version: $release_version
             development_version="${major}.${next_minor}.0-SNAPSHOT"
+            echo Development version: $development_version
 
             mvn --batch-mode --no-transfer-progress \
               -P repo-github \
