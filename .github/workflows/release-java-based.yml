@@ -107,8 +107,32 @@ jobs:
               --settings $GITHUB_WORKSPACE/.github/settings.xml
           fi
           if [ "${{ inputs.release-type }}" = "Major" ]; then
+            set -x
+            
             echo "Releasing major"
-            echo "ERROR THIS IS NOT SUPPORTED YET!"
+
+            current=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout --settings $GITHUB_WORKSPACE/.github/settings.xml)
+            echo Current: $current
+            major=$(echo $current | cut -d. -f1)
+            echo Major: $major
+            next_major=$((major + 1))
+            echo Next Major: $next_major
+
+            release_version="${next_major}.0.0"
+            echo Release Version: $release_version
+            development_version="${next_major}.0.0-SNAPSHOT"
+            echo Development version: $development_version
+
+            mvn --batch-mode --no-transfer-progress \
+              -P repo-github \
+              release:prepare release:perform \
+              -Dusername=$GITHUB_ACCESS_TOKEN \
+              -Dpassword=$GITHUB_ACCESS_TOKEN \
+              -DreleaseVersion=${release_version} \
+              -DdevelopmentVersion=${development_version} \
+              -Darguments="-Dmaven.javadoc.skip=true" \
+              -Darguments="-DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+              --settings $GITHUB_WORKSPACE/.github/settings.xml
           fi
         env:
           MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
