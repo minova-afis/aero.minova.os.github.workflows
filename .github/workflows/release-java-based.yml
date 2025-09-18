@@ -76,6 +76,7 @@ jobs:
             minor=$(echo $current | cut -d. -f2)
             echo Minor: $minor
             patch=$(echo $current | cut -d. -f3)
+            patch=$((patch + 0)) # Entfernt den `-SNAPSHOT` Suffix.
             echo Patch: $patch
             next_patch=$((patch + 1))
             echo Next Patch: $next_patch
