@@ -3,13 +3,13 @@ on:
   workflow_call:
     inputs:
       openapi-specification:
-        description: 'OpenAPI specification in YAML format used by the OpenAPI generator'
+        description: "OpenAPI specification in YAML format used by the OpenAPI generator"
         type: string
         required: true
       openapi-config:
-        description: 'Configuration file in JSON format used by the OpenAPI generator'
+        description: "Configuration file in JSON format used by the OpenAPI generator"
         type: string
-        default: 'typescript-angular.config.json'
+        default: "typescript-angular.config.json"
       base-package-as-path:
         description: "Value of 'basePackage' inside configuration file converted to a path expression, e.g. 'sam.openapi.api.client' -> 'sam/openapi/api/client'"
         type: string
@@ -47,8 +47,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          registry-url: 'https://npm.pkg.github.com'
+          node-version: 22
+          registry-url: "https://npm.pkg.github.com"
 
       - name: Publish NPM package
         if: steps.branch-name.outputs.ref_branch == 'main'
