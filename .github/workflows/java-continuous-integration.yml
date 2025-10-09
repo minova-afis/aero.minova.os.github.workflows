@@ -4,28 +4,28 @@ on:
   workflow_call:
     inputs:
       dependency-check-auto-update:
-        description: 'If true, OWASP Dependency Check retrieves current NVD data which usually takes more than 2 minutes. Otherwise use NVD data retrieved at midnight every day.'
+        description: "If true, OWASP Dependency Check retrieves current NVD data which usually takes more than 2 minutes. Otherwise use NVD data retrieved at midnight every day."
         type: boolean
         default: false
       dependency-check-goal:
-        description: 'OWASP Dependency Check command to be executed, e.g. check, aggregate'
+        description: "OWASP Dependency Check command to be executed, e.g. check, aggregate"
         type: string
-        default: 'check'
+        default: "check"
       do-containerize:
-        description: 'Should CI flow create a container image?'
+        description: "Should CI flow create a container image?"
         type: boolean
         default: false
       maven-goal:
-        description: 'Maven goal during the build, e.g. verify, package, install'
+        description: "Maven goal during the build, e.g. verify, package, install"
         type: string
-        default: 'verify'
+        default: "verify"
       registry:
-        description: 'Container registry to be used, e.g. ghcr.io, docker.io'
+        description: "Container registry to be used, e.g. ghcr.io, docker.io"
         type: string
-        default: 'ghcr.io'
+        default: "ghcr.io"
       java-version:
         type: string
-        default: '21'
+        default: "21"
     outputs:
       container-image:
         description: "Fully qualified name of the prepared container image"
@@ -52,15 +52,15 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: set up JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: "temurin"
           java-version: ${{ matrix.java-version }}
-          java-package: 'jdk'
-          cache: 'maven'
+          java-package: "jdk"
+          cache: "maven"
 
       - name: cache SonarQube packages
         uses: actions/cache@v4
@@ -86,14 +86,19 @@ jobs:
       - if: github.actor == 'dependabot[bot]'
         name: Maven build (for dependabot)
         run: |
-            mvn --batch-mode --no-transfer-progress \
-              -P repo-github -P all-tests \
-              ${{ inputs.maven-goal }} \
-              -Dusername=$GITHUB_ACCESS_TOKEN \
-              -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} \
-              -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
-              --file pom.xml \
-              --settings .github/settings.xml
+          mvn --batch-mode --no-transfer-progress \
+            -P repo-github -P all-tests \
+            ${{ inputs.maven-goal }} \
+            org.owasp:dependency-check-maven:${{ inputs.dependency-check-goal }} \
+            -DautoUpdate=${{ inputs.dependency-check-auto-update }} \
+            -DassemblyAnalyzerEnabled=false \
+            -DossindexAnalyzerEnabled=false \
+            -DossIndexWarnOnlyOnRemoteErrors=true \
+            -Dusername=$GITHUB_ACCESS_TOKEN \
+            -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} \
+            -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            --file pom.xml \
+            --settings .github/settings.xml
         env:
           MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
           MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
@@ -102,15 +107,19 @@ jobs:
       - if: github.actor != 'dependabot[bot]'
         name: Maven build (not dependabot, including org.owasp:dependency-check-maven)
         run: |
-            mvn --batch-mode --no-transfer-progress \
-              -P repo-github -P all-tests \
-              ${{ inputs.maven-goal }} \
-              org.owasp:dependency-check-maven:${{ inputs.dependency-check-goal }} -DautoUpdate=${{inputs.dependency-check-auto-update}} \
-              -Dusername=$GITHUB_ACCESS_TOKEN \
-              -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} \
-              -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
-              --file pom.xml \
-              --settings .github/settings.xml
+          mvn --batch-mode --no-transfer-progress \
+            -P repo-github -P all-tests \
+            ${{ inputs.maven-goal }} \
+            org.owasp:dependency-check-maven:${{ inputs.dependency-check-goal }} \
+            -DautoUpdate=${{ inputs.dependency-check-auto-update }} \
+            -DassemblyAnalyzerEnabled=false \
+            -DossindexAnalyzerEnabled=false \
+            -DossIndexWarnOnlyOnRemoteErrors=true \
+            -Dusername=$GITHUB_ACCESS_TOKEN \
+            -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} \
+            -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            --file pom.xml \
+            --settings .github/settings.xml
         env:
           MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
           MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
@@ -119,10 +128,10 @@ jobs:
       - name: set up JDK 21 for Sonar Scan
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: "temurin"
           java-version: 21
-          java-package: 'jdk'
-          cache: 'maven'
+          java-package: "jdk"
+          cache: "maven"
 
       - name: SonarQube scan
         run: |
@@ -141,10 +150,12 @@ jobs:
           SONAR_LOGIN: ${{ secrets.SONAR_LOGIN }}
 
       - name: store report of Dependency Check
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dependency-check-report.html
           path: target/dependency-check-report.html
+          if-no-files-found: ignore
 
       # Build Container Image
       - name: get date
@@ -153,7 +164,7 @@ jobs:
         uses: boredland/get-time-action@2.0.0
         with:
           timeZone: UTC
-          format: 'YYYYMMDD'
+          format: "YYYYMMDD"
 
       - name: prepare container image name
         if: inputs.do-containerize == true
