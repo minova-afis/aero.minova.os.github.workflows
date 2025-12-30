@@ -10,6 +10,7 @@
 # - Uses Jib configuration from pom.xml as source of truth
 # - Automatically tags containers with both version and 'latest'
 # - Supports Java 8, 11, 17, 21 (default: 21)
+# - Flexible artifact selection: release both, JAR only, or container only
 #
 # Usage:
 #   jobs:
@@ -18,8 +19,8 @@
 #       secrets: inherit
 #       with:
 #         release-version: "1.2.3"
-#         java-version: "21"          # optional, default: 21
-#         do-containerize: true        # optional, default: true
+#         artifact-type: "both"        # optional: 'both', 'jar', 'container'; default: both
+#         java-version: "21"           # optional, default: 21
 #         registry: "ghcr.io"          # optional, default: ghcr.io
 #         container-name: "my-service" # optional, defaults to repo name
 #
@@ -38,10 +39,10 @@ run-name: Release Java Service ${{ inputs.release-version }}
 on:
   workflow_call:
     inputs:
-      do-containerize:
-        description: 'Should CI flow create a container image using Jib?'
-        type: boolean
-        default: true
+      artifact-type:
+        description: 'What to release: both (JAR + container), jar (JAR only), or container (container only)'
+        type: string
+        default: 'both'
       container-name:
         description: 'Alternative name for the container-image, otherwise $github.event.repository.name'
         type: string
@@ -104,7 +105,35 @@ jobs:
           git config --global user.email "service@minova.com"
           git config --global user.name "minova-worker"
 
+      - name: Determine what to build
+        id: build_flags
+        shell: bash
+        run: |
+          ARTIFACT_TYPE="${{ inputs.artifact-type }}"
+
+          # Set build flags
+          if [ "$ARTIFACT_TYPE" = "both" ] || [ "$ARTIFACT_TYPE" = "jar" ]; then
+            echo "BUILD_JAR=true" >> $GITHUB_ENV
+            echo "build_jar=true" >> $GITHUB_OUTPUT
+          else
+            echo "BUILD_JAR=false" >> $GITHUB_ENV
+            echo "build_jar=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [ "$ARTIFACT_TYPE" = "both" ] || [ "$ARTIFACT_TYPE" = "container" ]; then
+            echo "BUILD_CONTAINER=true" >> $GITHUB_ENV
+            echo "build_container=true" >> $GITHUB_OUTPUT
+          else
+            echo "BUILD_CONTAINER=false" >> $GITHUB_ENV
+            echo "build_container=false" >> $GITHUB_OUTPUT
+          fi
+
+          echo "Building: $ARTIFACT_TYPE"
+          echo "  - JAR: ${BUILD_JAR:-false}"
+          echo "  - Container: ${BUILD_CONTAINER:-false}"
+
       - name: Prepare container image name
+        if: env.BUILD_CONTAINER == 'true'
         id: container-name-and-githash
         shell: bash
         run: |
@@ -122,8 +151,8 @@ jobs:
           echo "container_name=${CONTAINER_NAME}" >> $GITHUB_OUTPUT
           echo "full_image_name=${FULL_IMAGE_NAME}" >> $GITHUB_OUTPUT
 
-      - name: Maven release '${{ inputs.release-version }}' with Jib containerization
-        if: inputs.do-containerize == true
+      - name: Maven release with Jib containerization (both)
+        if: inputs.artifact-type == 'both'
         shell: bash
         run: |
           cd $GITHUB_WORKSPACE/${{inputs.folder}}
@@ -150,8 +179,8 @@ jobs:
           MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
           GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
 
-      - name: Maven release '${{ inputs.release-version }}' without containerization
-        if: inputs.do-containerize == false
+      - name: Maven release JAR only
+        if: inputs.artifact-type == 'jar'
         shell: bash
         run: |
           cd $GITHUB_WORKSPACE/${{inputs.folder}}
@@ -168,19 +197,51 @@ jobs:
           MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
           GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
 
+      - name: Build and push container only
+        if: inputs.artifact-type == 'container'
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE/${{inputs.folder}}
+
+          # Prepare Jib arguments for container build
+          JIB_ARGS="-Djib.to.image=${{ steps.container-name-and-githash.outputs.full_image_name }}"
+          JIB_ARGS="$JIB_ARGS -Djib.to.tags=${{ inputs.release-version }},latest"
+          JIB_ARGS="$JIB_ARGS -Djib.to.auth.username=${{ github.actor }}"
+          JIB_ARGS="$JIB_ARGS -Djib.to.auth.password=${{ secrets.GITHUB_TOKEN }}"
+          JIB_ARGS="$JIB_ARGS -DskipPreparePackage=true"
+
+          echo "Building JAR locally (not releasing)..."
+          mvn --batch-mode --no-transfer-progress \
+            clean package \
+            -DskipTests \
+            --settings $GITHUB_WORKSPACE/.github/settings.xml
+
+          echo "Building and pushing container..."
+          mvn --batch-mode --no-transfer-progress \
+            jib:build \
+            $JIB_ARGS \
+            --settings $GITHUB_WORKSPACE/.github/settings.xml
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+
       - name: Create release summary
         shell: bash
         run: |
           echo "## Java Service Release Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: ${{ inputs.release-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact Type**: ${{ inputs.artifact-type }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Java Version**: ${{ matrix.java-version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          echo "### JAR Artifact" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status**: ✅ Successfully released to GitHub Packages" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ env.BUILD_JAR }}" = "true" ]; then
+            echo "### JAR Artifact" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: ✅ Successfully released to GitHub Packages" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
 
-          if [ "${{ inputs.do-containerize }}" = "true" ]; then
+          if [ "${{ env.BUILD_CONTAINER }}" = "true" ]; then
             echo "### Container" >> $GITHUB_STEP_SUMMARY
             echo "- **Registry**: ${{ inputs.registry }}" >> $GITHUB_STEP_SUMMARY
             echo "- **Image**: ${{ steps.container-name-and-githash.outputs.full_image_name }}" >> $GITHUB_STEP_SUMMARY

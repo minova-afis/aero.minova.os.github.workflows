@@ -37,6 +37,10 @@ Complete Maven release for Java services with Jib-based containerization.
 - Default Java version: 21
 - Automatic tagging: `{version}` and `latest`
 - Target registry: `ghcr.io/minova-afis/{project-name}`
+- **Flexible artifact selection**: Choose what to release:
+  - `both`: JAR + container (default)
+  - `jar`: JAR only
+  - `container`: Container only (useful for retrying failed container builds)
 
 #### `release-java-based.yml`
 Release workflow for Java-based applications.
@@ -104,6 +108,14 @@ on:
       release-version:
         description: 'Release Version'
         required: true
+      artifact-type:
+        description: 'What to release'
+        type: choice
+        default: 'both'
+        options:
+          - both
+          - jar
+          - container
 
 jobs:
   release:
@@ -111,8 +123,8 @@ jobs:
     secrets: inherit
     with:
       release-version: ${{ github.event.inputs.release-version }}
+      artifact-type: ${{ github.event.inputs.artifact-type }}
       java-version: '21'
-      do-containerize: true
 ```
 
 ## Required Secrets
