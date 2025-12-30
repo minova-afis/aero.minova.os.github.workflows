@@ -29,8 +29,9 @@
 #
 # Prerequisites:
 # - Jib plugin configured in pom.xml
-# - GitHub secrets: MAIN_GITHUB_RELEASE_USERNAME, MAIN_GITHUB_RELEASE_TOKEN, GITHUB_TOKEN
-# - Container registry write permissions
+# - GitHub secrets: MAIN_GITHUB_RELEASE_USERNAME, MAIN_GITHUB_RELEASE_TOKEN
+# - Workflow has packages:write permission (automatically configured)
+# - GITHUB_TOKEN is used for container registry authentication
 #
 name: Release Java Service (JAR + Container)
 run-name: Release Java Service ${{ inputs.release-version }}
@@ -70,6 +71,11 @@ jobs:
   release:
     name: Release JAR and Container
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+
     outputs:
       container-image: ${{steps.container-name-and-githash.outputs.container-image}}
 
