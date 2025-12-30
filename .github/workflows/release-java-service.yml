@@ -133,6 +133,7 @@ jobs:
           JIB_ARGS="$JIB_ARGS -Djib.to.tags=${{ inputs.release-version }},latest"
           JIB_ARGS="$JIB_ARGS -Djib.to.auth.username=${{ github.actor }}"
           JIB_ARGS="$JIB_ARGS -Djib.to.auth.password=${{ secrets.GITHUB_TOKEN }}"
+          JIB_ARGS="$JIB_ARGS -DskipPreparePackage=true"
 
           # Run Maven release with Jib build as part of release:perform
           mvn --batch-mode --no-transfer-progress \
