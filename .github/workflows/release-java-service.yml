@@ -1,0 +1,188 @@
+# Release Java Service (JAR + Container)
+#
+# This reusable workflow performs a complete Maven release for Java services,
+# including both JAR artifact deployment and containerization using Jib.
+#
+# Key features:
+# - Performs standard Maven release:prepare and release:perform
+# - Deploys JAR artifact to GitHub Packages (Maven repository)
+# - Builds and pushes container image using Jib Maven plugin
+# - Uses Jib configuration from pom.xml as source of truth
+# - Automatically tags containers with both version and 'latest'
+# - Supports Java 8, 11, 17, 21 (default: 21)
+#
+# Usage:
+#   jobs:
+#     release:
+#       uses: minova-afis/aero.minova.os.github.workflows/.github/workflows/release-java-service.yml@main
+#       secrets: inherit
+#       with:
+#         release-version: "1.2.3"
+#         java-version: "21"          # optional, default: 21
+#         do-containerize: true        # optional, default: true
+#         registry: "ghcr.io"          # optional, default: ghcr.io
+#         container-name: "my-service" # optional, defaults to repo name
+#
+# Container image naming:
+#   {registry}/{owner}/{container-name}:{version}
+#   Example: ghcr.io/minova-afis/my-service:1.2.3
+#
+# Prerequisites:
+# - Jib plugin configured in pom.xml
+# - GitHub secrets: MAIN_GITHUB_RELEASE_USERNAME, MAIN_GITHUB_RELEASE_TOKEN, GITHUB_TOKEN
+# - Container registry write permissions
+#
+name: Release Java Service (JAR + Container)
+run-name: Release Java Service ${{ inputs.release-version }}
+on:
+  workflow_call:
+    inputs:
+      do-containerize:
+        description: 'Should CI flow create a container image using Jib?'
+        type: boolean
+        default: true
+      container-name:
+        description: 'Alternative name for the container-image, otherwise $github.event.repository.name'
+        type: string
+        default: ''
+      registry:
+        description: 'Container registry to be used, e.g. ghcr.io, docker.io'
+        type: string
+        default: 'ghcr.io'
+      folder:
+        description: 'Folder of the software project to be released in the repo.'
+        type: string
+        default: './'
+      release-version:
+        description: 'Version string of this release'
+        type: string
+        required: true
+      java-version:
+        description: 'This is the version of Java used for release.'
+        type: string
+        default: '21'
+    outputs:
+      container-image:
+        description: "Fully qualified name of the prepared container image"
+        value: ${{jobs.release.outputs.container-image}}
+
+jobs:
+  release:
+    name: Release JAR and Container
+    runs-on: ubuntu-latest
+    outputs:
+      container-image: ${{steps.container-name-and-githash.outputs.container-image}}
+
+    strategy:
+      matrix:
+        java-version:
+          - ${{inputs.java-version}}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java-version }}
+          java-package: 'jdk'
+          cache: 'maven'
+
+      - name: Configure Git
+        shell: bash
+        run: |
+          git config --global user.email "service@minova.com"
+          git config --global user.name "minova-worker"
+
+      - name: Prepare container image name
+        id: container-name-and-githash
+        shell: bash
+        run: |
+          GITHUB_SHA_SHORT=$(git rev-parse --short HEAD)
+          echo "github_sha_short=$GITHUB_SHA_SHORT" >> $GITHUB_OUTPUT
+
+          # Use provided container name or fallback to repository name
+          CONTAINER_NAME="${{ inputs.container-name }}"
+          if [ -z "$CONTAINER_NAME" ]; then
+            CONTAINER_NAME="${{ github.event.repository.name }}"
+          fi
+
+          FULL_IMAGE_NAME="${{ inputs.registry }}/${{ github.repository_owner }}/${CONTAINER_NAME}"
+          echo "container-image=${FULL_IMAGE_NAME}:${{ inputs.release-version }}" >> $GITHUB_OUTPUT
+          echo "container_name=${CONTAINER_NAME}" >> $GITHUB_OUTPUT
+          echo "full_image_name=${FULL_IMAGE_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Maven release '${{ inputs.release-version }}' with Jib containerization
+        if: inputs.do-containerize == true
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE/${{inputs.folder}}
+
+          # Prepare Jib arguments for container build
+          JIB_ARGS="-Djib.to.image=${{ steps.container-name-and-githash.outputs.full_image_name }}"
+          JIB_ARGS="$JIB_ARGS -Djib.to.tags=${{ inputs.release-version }},latest"
+          JIB_ARGS="$JIB_ARGS -Djib.to.auth.username=${{ github.actor }}"
+          JIB_ARGS="$JIB_ARGS -Djib.to.auth.password=${{ secrets.GITHUB_TOKEN }}"
+
+          # Run Maven release with Jib build as part of release:perform
+          mvn --batch-mode --no-transfer-progress \
+            -P repo-github \
+            release:prepare release:perform \
+            -Dusername=$GITHUB_ACCESS_TOKEN \
+            -Dpassword=$GITHUB_ACCESS_TOKEN \
+            -DreleaseVersion=${{ inputs.release-version }} \
+            -Dgoals="deploy jib:build" \
+            -Darguments="-Dmaven.javadoc.skip=true -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} $JIB_ARGS" \
+            --settings $GITHUB_WORKSPACE/.github/settings.xml
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+
+      - name: Maven release '${{ inputs.release-version }}' without containerization
+        if: inputs.do-containerize == false
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE/${{inputs.folder}}
+          mvn --batch-mode --no-transfer-progress \
+            -P repo-github \
+            release:prepare release:perform \
+            -Dusername=$GITHUB_ACCESS_TOKEN \
+            -Dpassword=$GITHUB_ACCESS_TOKEN \
+            -DreleaseVersion=${{ inputs.release-version }} \
+            -Darguments="-Dmaven.javadoc.skip=true -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            --settings $GITHUB_WORKSPACE/.github/settings.xml
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+
+      - name: Create release summary
+        shell: bash
+        run: |
+          echo "## Java Service Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ inputs.release-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Java Version**: ${{ matrix.java-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### JAR Artifact" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Successfully released to GitHub Packages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ inputs.do-containerize }}" = "true" ]; then
+            echo "### Container" >> $GITHUB_STEP_SUMMARY
+            echo "- **Registry**: ${{ inputs.registry }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Image**: ${{ steps.container-name-and-githash.outputs.full_image_name }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Tags**: \`${{ inputs.release-version }}\`, \`latest\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: ✅ Successfully built and pushed with Jib" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Pull and run:**" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "docker pull ${{ steps.container-name-and-githash.outputs.container-image }}" >> $GITHUB_STEP_SUMMARY
+            echo "docker run -p 2000:2000 ${{ steps.container-name-and-githash.outputs.container-image }}" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
