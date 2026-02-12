@@ -124,21 +124,21 @@ jobs:
           java-package: 'jdk'
           cache: 'maven'
 
-      #- name: SonarQube scan
-      #  run: |
-      #    mvn --batch-mode --no-transfer-progress \
-      #      sonar:sonar \
-      #      -Dsonar.projectKey=${{github.repository_owner}}_${{github.event.repository.name}} \
-      #      -Dsonar.branch.name=${{steps.branch-name.outputs.current_branch}} \
-      #      --file pom.xml \
-      #      --settings .github/settings.xml
-      #  env:
-      #    MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
-      #    MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
-      #    GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
-      #    SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-      #    SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      #    SONAR_LOGIN: ${{ secrets.SONAR_LOGIN }}
+      - name: SonarQube scan
+        run: |
+          mvn --batch-mode --no-transfer-progress \
+            sonar:sonar \
+            -Dsonar.projectKey=${{github.repository_owner}}_${{github.event.repository.name}} \
+            -Dsonar.branch.name=${{steps.branch-name.outputs.current_branch}} \
+            --file pom.xml \
+            --settings .github/settings.xml
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_LOGIN: ${{ secrets.SONAR_LOGIN }}
 
       - name: store report of Dependency Check
         uses: actions/upload-artifact@v4
