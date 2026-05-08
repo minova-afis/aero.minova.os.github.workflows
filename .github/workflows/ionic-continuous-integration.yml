@@ -78,14 +78,6 @@ jobs:
         run: |
            npm publish
 
-      # Build Container Image
-      - name: get date
-        if: inputs.do-containerize == true
-        id: time
-        uses: boredland/get-time-action@2.0.0
-        with:
-          timeZone: UTC
-          format: "YYYYMMDD"
 
       - name: prepare container image name
         if: inputs.do-containerize == true
