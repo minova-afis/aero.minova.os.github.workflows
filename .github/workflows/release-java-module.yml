@@ -10,7 +10,7 @@ on:
       java-version:
         description: 'This is the version of Java used for release.'
         type: string
-        default: '8'
+        default: '11'
         required: false
 
 jobs:
