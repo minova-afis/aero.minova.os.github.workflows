@@ -92,17 +92,18 @@ jobs:
         id: container-name-and-githash
         shell: bash
         run: |
-          GITHUB_SHA_SHORT=$(git rev-parse --short HEAD)
-          echo "github_sha_short=$GITHUB_SHA_SHORT" >> $GITHUB_OUTPUT
-          echo "container-image=${{inputs.registry}}/${{github.repository_owner}}/${{github.event.repository.name}}:${{ steps.time.outputs.time }}_$GITHUB_SHA_SHORT" >> $GITHUB_OUTPUT
+          VERSION=$(node -p "require('./app/package.json').version")
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "container-image=${{ inputs.registry }}/${{ github.repository_owner }}/${{ github.event.repository.name }}:$VERSION" >> $GITHUB_OUTPUT
 
       - name: build & push container image '${{ steps.container-name-and-githash.outputs.container-image }}'
         if: inputs.do-containerize == true && steps.branch-name.outputs.ref_branch == 'main' && github.event_name != 'pull_request'
         uses: mr-smithers-excellent/docker-build-push@v6.4
         with:
-          image: ${{github.event.repository.name}}
+          image: ${{ github.event.repository.name }}
           addLatest: true
-          tags: ${{ steps.time.outputs.time }}_${{ steps.container-name-and-githash.outputs.github_sha_short }}, latest
+          tags: ${{ steps.container-name-and-githash.outputs.version }}, latest
           dockerfile: ./app/Dockerfile
           registry: ${{ inputs.registry }}
           username: ${{ secrets.GHCR_USERNAME }}
