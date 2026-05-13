@@ -71,14 +71,18 @@ jobs:
 
       - name: retrieving NVD database (ghcr.io)
         if: inputs.dependency-check-auto-update == false
-        shell: bash
-        run: |
-          echo $GHCR_PASSWORD | docker login ghcr.io -u $GHCR_USERNAME --password-stdin
-          id=$(docker create ghcr.io/minova-afis/dependency-check-action:latest)
-          mkdir -p ~/.m2/repository/org/owasp/dependency-check-data
-          docker cp $id:/usr/share/dependency-check/data ~/.m2/repository/org/owasp/dependency-check-data/7.0
-          docker cp $id:/usr/share/dependency-check/data ~/.m2/repository/org/owasp/dependency-check-data/9.0
-          docker rm -v $id
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            echo $GHCR_PASSWORD | docker login ghcr.io -u $GHCR_USERNAME --password-stdin
+            id=$(docker create ghcr.io/minova-afis/dependency-check-action:latest)
+            mkdir -p ~/.m2/repository/org/owasp/dependency-check-data
+            docker cp $id:/usr/share/dependency-check/data ~/.m2/repository/org/owasp/dependency-check-data/7.0
+            docker cp $id:/usr/share/dependency-check/data ~/.m2/repository/org/owasp/dependency-check-data/9.0
+            docker rm -v $id
         env:
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_PASSWORD: ${{ secrets.GHCR_PASSWORD }}
