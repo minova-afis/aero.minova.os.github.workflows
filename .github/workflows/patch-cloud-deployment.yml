@@ -54,5 +54,9 @@ jobs:
           git config --global user.email "${{ inputs.email-address }}" || (echo "Git: Unable to set user.email to ${{ inputs.email-address }}" && exit 4)
           git config --global user.name "${{ inputs.email-address }}" || git config --global user.name "${{ inputs.triggered-by }}" || (echo "Git: Unable to set user.name to ${{ inputs.email-address }}" && exit 5)
           git add . || (echo "Git: Unable to add changed files" && exit 6)
+          if git diff --cached --quiet; then
+            echo "Git: No changes to commit"
+            exit 0
+          fi
           git commit -m "Promoting to container ${{ inputs.container-image }}" || (echo "Git: Unable to commit files" && exit 7)
           git push || (echo "Git: Unable to push" && exit 8)
