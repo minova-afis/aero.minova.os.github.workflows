@@ -90,7 +90,7 @@ jobs:
       - if: github.actor == 'dependabot[bot]'
         name: Maven build (for dependabot)
         run: |
-            mvn --batch-mode --no-transfer-progress \
+            mvn --batch-mode \
               -P repo-github -P all-tests \
               ${{ inputs.maven-goal }} \
               -Dusername=$GITHUB_ACCESS_TOKEN \
@@ -131,7 +131,7 @@ jobs:
 
       - name: SonarQube scan
         run: |
-          mvn --batch-mode --no-transfer-progress \
+          mvn --batch-mode \
             sonar:sonar \
             -Dsonar.projectKey=${{github.repository_owner}}_${{github.event.repository.name}} \
             -Dsonar.branch.name=${{steps.branch-name.outputs.current_branch}} \
