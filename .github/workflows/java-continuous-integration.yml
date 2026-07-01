@@ -106,7 +106,8 @@ jobs:
       - if: github.actor != 'dependabot[bot]'
         name: Maven build (not dependabot, including org.owasp:dependency-check-maven)
         run: |
-            mvn --batch-mode --no-transfer-progress \
+            # --no-transfer-progress wird nicht verwendet, da es das Herunterladen von Abhängigkeiten tatsächlich komplett versteck.
+            mvn --batch-mode \
               -P repo-github -P all-tests \
               ${{ inputs.maven-goal }} \
               org.owasp:dependency-check-maven:${{ inputs.dependency-check-goal }} -DautoUpdate=${{inputs.dependency-check-auto-update}} \
