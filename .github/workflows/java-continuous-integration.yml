@@ -35,6 +35,7 @@ jobs:
   build:
     name: build, analyze, containerize ... repeat
     runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[maven-release-plugin]')"
     outputs:
       container-image: ${{steps.container-name-and-githash.outputs.container-image}}
     permissions: write-all

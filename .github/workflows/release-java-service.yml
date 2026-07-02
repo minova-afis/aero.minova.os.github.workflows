@@ -35,12 +35,12 @@
 # - GITHUB_TOKEN is used for container registry authentication
 #
 name: Release Java Service (JAR + Container)
-run-name: Release Java Service ${{ inputs.release-version }}
+run-name: Release Java Service ${{ inputs.artifact-type }} ${{ inputs.release-version }}
 on:
   workflow_call:
     inputs:
       artifact-type:
-        description: 'What to release: both (JAR + container), jar (JAR only), or container (container only)'
+        description: 'What to release: both_patch (default), both_minor, both_major, both (manual version), jar, container'
         type: string
         default: 'both'
       container-name:
@@ -56,9 +56,9 @@ on:
         type: string
         default: './'
       release-version:
-        description: 'Version string of this release'
+        description: 'Explicit version to release (required for both, jar, container; ignored for both_patch/minor/major)'
         type: string
-        required: true
+        default: ''
       java-version:
         description: 'This is the version of Java used for release.'
         type: string
@@ -105,6 +105,42 @@ jobs:
           git config --global user.email "service@minova.com"
           git config --global user.name "minova-worker"
 
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE/${{inputs.folder}}
+          ARTIFACT_TYPE="${{ inputs.artifact-type }}"
+
+          if [ "$ARTIFACT_TYPE" = "both_patch" ] || [ "$ARTIFACT_TYPE" = "both_minor" ] || [ "$ARTIFACT_TYPE" = "both_major" ]; then
+            current=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout --settings $GITHUB_WORKSPACE/.github/settings.xml)
+            echo "Current version: $current"
+            major=$(echo $current | cut -d. -f1)
+            minor=$(echo $current | cut -d. -f2)
+            patch=$(echo $current | cut -d. -f3 | cut -d- -f1)
+
+            if [ "$ARTIFACT_TYPE" = "both_patch" ]; then
+              VERSION="${major}.${minor}.${patch}"
+            elif [ "$ARTIFACT_TYPE" = "both_minor" ]; then
+              VERSION="${major}.$((minor + 1)).0"
+            elif [ "$ARTIFACT_TYPE" = "both_major" ]; then
+              VERSION="$((major + 1)).0.0"
+            fi
+          else
+            VERSION="${{ inputs.release-version }}"
+            if [ -z "$VERSION" ]; then
+              echo "Error: release-version must be provided for artifact-type '$ARTIFACT_TYPE'"
+              exit 1
+            fi
+          fi
+
+          echo "Resolved release version: $VERSION"
+          echo "release_version=$VERSION" >> $GITHUB_OUTPUT
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+
       - name: Determine what to build
         id: build_flags
         shell: bash
@@ -112,7 +148,7 @@ jobs:
           ARTIFACT_TYPE="${{ inputs.artifact-type }}"
 
           # Set build flags
-          if [ "$ARTIFACT_TYPE" = "both" ] || [ "$ARTIFACT_TYPE" = "jar" ]; then
+          if [[ "$ARTIFACT_TYPE" == both* ]] || [ "$ARTIFACT_TYPE" = "jar" ]; then
             echo "BUILD_JAR=true" >> $GITHUB_ENV
             echo "build_jar=true" >> $GITHUB_OUTPUT
           else
@@ -120,7 +156,7 @@ jobs:
             echo "build_jar=false" >> $GITHUB_OUTPUT
           fi
 
-          if [ "$ARTIFACT_TYPE" = "both" ] || [ "$ARTIFACT_TYPE" = "container" ]; then
+          if [[ "$ARTIFACT_TYPE" == both* ]] || [ "$ARTIFACT_TYPE" = "container" ]; then
             echo "BUILD_CONTAINER=true" >> $GITHUB_ENV
             echo "build_container=true" >> $GITHUB_OUTPUT
           else
@@ -147,19 +183,19 @@ jobs:
           fi
 
           FULL_IMAGE_NAME="${{ inputs.registry }}/${{ github.repository_owner }}/${CONTAINER_NAME}"
-          echo "container-image=${FULL_IMAGE_NAME}:${{ inputs.release-version }}" >> $GITHUB_OUTPUT
+          echo "container-image=${FULL_IMAGE_NAME}:${{ steps.version.outputs.release_version }}" >> $GITHUB_OUTPUT
           echo "container_name=${CONTAINER_NAME}" >> $GITHUB_OUTPUT
           echo "full_image_name=${FULL_IMAGE_NAME}" >> $GITHUB_OUTPUT
 
       - name: Maven release with Jib containerization (both)
-        if: inputs.artifact-type == 'both'
+        if: startsWith(inputs.artifact-type, 'both')
         shell: bash
         run: |
           cd $GITHUB_WORKSPACE/${{inputs.folder}}
 
           # Prepare Jib arguments for container build
           JIB_ARGS="-Djib.to.image=${{ steps.container-name-and-githash.outputs.full_image_name }}"
-          JIB_ARGS="$JIB_ARGS -Djib.to.tags=${{ inputs.release-version }},latest"
+          JIB_ARGS="$JIB_ARGS -Djib.to.tags=${{ steps.version.outputs.release_version }},latest"
           # JIB_ARGS="$JIB_ARGS -Djib.to.auth.username=${{ github.actor }}"
           # JIB_ARGS="$JIB_ARGS -Djib.to.auth.password=${{ secrets.GITHUB_TOKEN }}"
           JIB_ARGS="$JIB_ARGS -Djib.to.auth.username=${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}"
@@ -172,7 +208,7 @@ jobs:
             release:prepare release:perform \
             -Dusername=$GITHUB_ACCESS_TOKEN \
             -Dpassword=$GITHUB_ACCESS_TOKEN \
-            -DreleaseVersion=${{ inputs.release-version }} \
+            -DreleaseVersion=${{ steps.version.outputs.release_version }} \
             -Dgoals="deploy jib:build" \
             -Darguments="-Dmaven.javadoc.skip=true -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} $JIB_ARGS" \
             --settings $GITHUB_WORKSPACE/.github/settings.xml
@@ -191,7 +227,7 @@ jobs:
             release:prepare release:perform \
             -Dusername=$GITHUB_ACCESS_TOKEN \
             -Dpassword=$GITHUB_ACCESS_TOKEN \
-            -DreleaseVersion=${{ inputs.release-version }} \
+            -DreleaseVersion=${{ steps.version.outputs.release_version }} \
             -Darguments="-Dmaven.javadoc.skip=true -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
             --settings $GITHUB_WORKSPACE/.github/settings.xml
         env:
@@ -207,7 +243,7 @@ jobs:
 
           # Prepare Jib arguments for container build
           JIB_ARGS="-Djib.to.image=${{ steps.container-name-and-githash.outputs.full_image_name }}"
-          JIB_ARGS="$JIB_ARGS -Djib.to.tags=${{ inputs.release-version }},latest"
+          JIB_ARGS="$JIB_ARGS -Djib.to.tags=${{ steps.version.outputs.release_version }},latest"
           # JIB_ARGS="$JIB_ARGS -Djib.to.auth.username=${{ github.actor }}"
           # JIB_ARGS="$JIB_ARGS -Djib.to.auth.password=${{ secrets.GITHUB_TOKEN }}"
           JIB_ARGS="$JIB_ARGS -Djib.to.auth.username=${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}"
@@ -235,7 +271,7 @@ jobs:
         shell: bash
         run: |
           echo "## Java Service Release Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: ${{ inputs.release-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.release_version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Artifact Type**: ${{ inputs.artifact-type }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Java Version**: ${{ matrix.java-version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -250,7 +286,7 @@ jobs:
             echo "### Container" >> $GITHUB_STEP_SUMMARY
             echo "- **Registry**: ${{ inputs.registry }}" >> $GITHUB_STEP_SUMMARY
             echo "- **Image**: ${{ steps.container-name-and-githash.outputs.full_image_name }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Tags**: \`${{ inputs.release-version }}\`, \`latest\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Tags**: \`${{ steps.version.outputs.release_version }}\`, \`latest\`" >> $GITHUB_STEP_SUMMARY
             echo "- **Status**: ✅ Successfully built and pushed with Jib" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Pull and run:**" >> $GITHUB_STEP_SUMMARY
