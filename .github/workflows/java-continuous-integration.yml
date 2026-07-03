@@ -15,6 +15,14 @@ on:
         description: 'Should CI flow create a container image?'
         type: boolean
         default: false
+      do-sonarqube:
+        description: 'Should CI run SonarQube scan?'
+        type: boolean
+        default: true
+      upload-dependency-check-report:
+        description: 'Should CI upload the OWASP Dependency Check HTML report?'
+        type: boolean
+        default: true
       maven-goal:
         description: 'Maven goal during the build, e.g. verify, package, install'
         type: string
@@ -63,6 +71,7 @@ jobs:
           cache: 'maven'
 
       - name: cache SonarQube packages
+        if: inputs.do-sonarqube == true
         uses: actions/cache@v4
         with:
           path: ~/.sonar/cache
@@ -117,6 +126,7 @@ jobs:
           GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
 
       - name: set up JDK 21 for Sonar Scan
+        if: inputs.do-sonarqube == true
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -125,6 +135,7 @@ jobs:
           cache: 'maven'
 
       - name: SonarQube scan
+        if: inputs.do-sonarqube == true
         run: |
           mvn --batch-mode --no-transfer-progress \
             sonar:sonar \
@@ -141,6 +152,7 @@ jobs:
           SONAR_LOGIN: ${{ secrets.SONAR_LOGIN }}
 
       - name: store report of Dependency Check
+        if: inputs.upload-dependency-check-report == true && github.actor != 'dependabot[bot]'
         uses: actions/upload-artifact@v4
         with:
           name: dependency-check-report.html
