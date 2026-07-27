@@ -88,7 +88,7 @@ jobs:
             -P repo-github -P all-tests \
             ${{ inputs.maven-goal }} \
             org.owasp:dependency-check-maven:${{ inputs.dependency-check-goal }} -DautoUpdate=${{inputs.dependency-check-auto-update}} \
-            sonar:sonar \
+            org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -Dusername=$GITHUB_ACCESS_TOKEN \
             -DAWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }} \
             -DAWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
