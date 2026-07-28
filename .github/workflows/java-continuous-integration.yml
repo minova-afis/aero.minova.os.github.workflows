@@ -133,7 +133,7 @@ jobs:
       - name: SonarQube scan
         run: |
           mvn --batch-mode \
-            sonar:sonar \
+            org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -Dsonar.projectKey=${{github.repository_owner}}_${{github.event.repository.name}} \
             -Dsonar.branch.name=${{steps.branch-name.outputs.current_branch}} \
             --file pom.xml \
