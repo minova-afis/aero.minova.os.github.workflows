@@ -15,6 +15,10 @@ on:
         description: 'Should CI flow create a container image?'
         type: boolean
         default: false
+      do-sonar-scan:
+        description: 'Should CI flow run a SonarQube scan?'
+        type: boolean
+        default: false
       maven-goal:
         description: 'Maven goal during the build, e.g. verify, package, install'
         type: string
@@ -64,6 +68,7 @@ jobs:
           cache: 'maven'
 
       - name: cache SonarQube packages
+        if: inputs.do-sonar-scan == true
         uses: actions/cache@v4
         with:
           path: ~/.sonar/cache
@@ -123,6 +128,7 @@ jobs:
           GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
 
       - name: set up JDK 21 for Sonar Scan
+        if: inputs.do-sonar-scan == true
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -131,6 +137,7 @@ jobs:
           cache: 'maven'
 
       - name: SonarQube scan
+        if: inputs.do-sonar-scan == true
         run: |
           mvn --batch-mode \
             sonar:sonar \
