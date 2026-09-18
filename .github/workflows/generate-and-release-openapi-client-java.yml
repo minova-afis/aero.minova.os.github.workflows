@@ -1,4 +1,5 @@
 name: generate OpenAPI specification, release if on 'main' branch
+
 on:
   workflow_call:
     inputs:
@@ -14,6 +15,11 @@ on:
         description: 'This is the version of Java used for release.'
         type: string
         default: '21'
+      publish:
+        description: 'Publish the generated client even when the caller is not on main.'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   generate-client-java:
@@ -39,7 +45,7 @@ jobs:
             exit 78
           fi
 
-      - name: generate API for client/Java
+      - name: Generate API for client/Java
         uses: docker://openapitools/openapi-generator-cli:v7.0.1
         with:
           entrypoint: /usr/local/bin/docker-entrypoint.sh
@@ -48,27 +54,27 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: ${{inputs.java-version}}
-          cache: 'maven'
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+          cache: maven
 
       - name: Build with Maven
-        if: steps.branch-name.outputs.ref_branch != 'main'
+        if: ${{ steps.branch-name.outputs.ref_branch != 'main' && !inputs.publish }}
         run: |
-          mvn --batch-mode --no-transfer-progress \
-            compile
+          mvn --batch-mode --no-transfer-progress compile
 
       - name: Build release with Maven
-        if: steps.branch-name.outputs.ref_branch == 'main'
+        if: ${{ steps.branch-name.outputs.ref_branch == 'main' || inputs.publish }}
         run: |
           git config --global user.email "service@minova.com"
           git config --global user.name "minova-worker"
           mvn --batch-mode --no-transfer-progress \
             deploy \
-            -Dusername=$GITHUB_ACCESS_TOKEN \
-            -Dpassword=$GITHUB_ACCESS_TOKEN \
+            -Dusername="$GITHUB_ACCESS_TOKEN" \
+            -Dpassword="$GITHUB_ACCESS_TOKEN" \
             -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/minova-afis/aero.minova.maven.root \
-            -Ddependency-check.skip=true -Dmaven.test.skip=true \
+            -Ddependency-check.skip=true \
+            -Dmaven.test.skip=true \
             --settings .github/settings.xml
         env:
           MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
