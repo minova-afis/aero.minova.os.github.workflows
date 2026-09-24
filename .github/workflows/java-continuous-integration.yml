@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[maven-release-plugin]')"
     outputs:
-      container-image: ${{steps.container-name-and-githash.outputs.container-image}}
+      container-image: ${{ steps.maven-version.outputs.container-image }}
     permissions: write-all
 
     strategy:
@@ -52,15 +52,15 @@ jobs:
     steps:
       - name: get branch name
         id: branch-name
-        uses: tj-actions/branch-names@v8.0.1
+        uses: tj-actions/branch-names@v9
 
       - name: checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java-version }}
@@ -69,7 +69,7 @@ jobs:
 
       - name: cache SonarQube packages
         if: inputs.do-sonar-scan == true
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
@@ -129,7 +129,7 @@ jobs:
 
       - name: set up JDK 21 for Sonar Scan
         if: inputs.do-sonar-scan == true
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: 21
@@ -154,36 +154,36 @@ jobs:
           SONAR_LOGIN: ${{ secrets.SONAR_LOGIN }}
 
       - name: store report of Dependency Check
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dependency-check-report.html
           path: target/dependency-check-report.html
 
-      # Build Container Image
-      - name: get date
+      - name: read Maven version
         if: inputs.do-containerize == true
-        id: time
-        uses: boredland/get-time-action@2.0.0
-        with:
-          timeZone: UTC
-          format: 'YYYYMMDD'
-
-      - name: prepare container image name
-        if: inputs.do-containerize == true
-        id: container-name-and-githash
+        id: maven-version
         shell: bash
         run: |
-          GITHUB_SHA_SHORT=$(git rev-parse --short HEAD)
-          echo "github_sha_short=$GITHUB_SHA_SHORT" >> $GITHUB_OUTPUT
-          echo "container-image=${{inputs.registry}}/${{github.repository_owner}}/${{github.event.repository.name}}:${{ steps.time.outputs.time }}_$GITHUB_SHA_SHORT" >> $GITHUB_OUTPUT
+          VERSION=$(mvn --batch-mode -q \
+            -P repo-github \
+            --file pom.xml \
+            --settings .github/settings.xml \
+            help:evaluate \
+            -Dexpression=project.version \
+            -DforceStdout)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "container-image=${{ inputs.registry }}/${{ github.repository_owner }}/${{ github.event.repository.name }}:$VERSION" >> "$GITHUB_OUTPUT"
+        env:
+          MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
+          MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
 
-      - name: build & push container image '${{ steps.container-name-and-githash.outputs.container-image }}'
+      - name: build & push container image '${{ steps.maven-version.outputs.container-image }}'
         if: inputs.do-containerize == true && steps.branch-name.outputs.ref_branch == 'main' && github.event_name != 'pull_request'
-        uses: mr-smithers-excellent/docker-build-push@v6
+        uses: mr-smithers-excellent/docker-build-push@v7
         with:
           image: ${{github.event.repository.name}}
-          addLatest: true
-          tags: ${{ steps.time.outputs.time }}_${{ steps.container-name-and-githash.outputs.github_sha_short }}, latest
+          tags: ${{ steps.maven-version.outputs.version }}, latest
           dockerfile: ./Dockerfile
           registry: ${{ inputs.registry }}
           username: ${{ secrets.GHCR_USERNAME }}
