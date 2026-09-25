@@ -81,12 +81,25 @@ jobs:
           echo "github_sha_short=$GITHUB_SHA_SHORT" >> $GITHUB_OUTPUT
           echo "container-image=${{ inputs.registry }}/${{ github.repository_owner }}/${{ inputs.container-name }}:${{ inputs.release-version }}" >> $GITHUB_OUTPUT
 
+      - name: verify release container tag is unused
+        shell: bash
+        run: |
+          printf '%s' "$GHCR_PASSWORD" |
+            docker login "${{ inputs.registry }}" --username "$GHCR_USERNAME" --password-stdin
+          if docker manifest inspect '${{ steps.container-name-and-githash.outputs.container-image }}' > /dev/null 2>&1; then
+            echo "Release container tag already exists and will not be overwritten: ${{ steps.container-name-and-githash.outputs.container-image }}"
+            exit 1
+          fi
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_PASSWORD: ${{ secrets.GHCR_PASSWORD }}
+
       - name: build & push container image '${{ steps.container-name-and-githash.outputs.container-image }}'
         uses: mr-smithers-excellent/docker-build-push@v6
         with:
           image: ${{ inputs.container-name }}
-          addLatest: true
-          tags: ${{ inputs.release-version }}, latest
+          addLatest: false
+          tags: ${{ inputs.release-version }}
           registry: ${{ inputs.registry }}
           username: ${{ secrets.GHCR_USERNAME }}
           password: ${{ secrets.GHCR_PASSWORD }}
