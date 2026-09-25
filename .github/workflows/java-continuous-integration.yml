@@ -73,7 +73,7 @@ jobs:
 
       - name: retrieving NVD database (ghcr.io)
         if: ${{ !inputs.dependency-check-auto-update && github.actor != 'dependabot[bot]' }}
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 5
           max_attempts: 3
