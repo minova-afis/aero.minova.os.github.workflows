@@ -41,7 +41,8 @@ jobs:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[maven-release-plugin]')"
     outputs:
-      container-image: ${{ steps.maven-version.outputs.container-image }}
+      # This is deliberately empty when no image was pushed (for example on a PR).
+      container-image: ${{ steps.published-image.outputs.container-image }}
     permissions:
       contents: read
 
@@ -157,32 +158,51 @@ jobs:
           name: dependency-check-report.html
           path: target/dependency-check-report.html
 
-      - name: read Maven version
+      - name: prepare immutable container image tag
         if: inputs.do-containerize
         id: maven-version
         shell: bash
         run: |
-          VERSION=$(mvn --batch-mode -q \
+          MAVEN_VERSION=$(mvn --batch-mode -q \
             -P repo-github \
             --file pom.xml \
             --settings .github/settings.xml \
             help:evaluate \
             -Dexpression=project.version \
             -DforceStdout)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "container-image=${{ inputs.registry }}/${{ github.repository_owner }}/${{ github.event.repository.name }}:$VERSION" >> "$GITHUB_OUTPUT"
+
+          # CI images are development builds. Use a SemVer prerelease based on
+          # the Maven base version and the GitHub run identity, so a rerun gets
+          # a new tag instead of replacing an existing image. Release images
+          # are created by release-java.yml and keep their plain Maven version.
+          if [[ "$MAVEN_VERSION" == *-SNAPSHOT ]]; then
+            BASE_VERSION="${MAVEN_VERSION%-SNAPSHOT}"
+          else
+            BASE_VERSION="$MAVEN_VERSION"
+          fi
+          IMAGE_TAG="${BASE_VERSION}-dev.${{ github.run_number }}.${{ github.run_attempt }}"
+
+          echo "image-tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          echo "candidate-image=${{ inputs.registry }}/${{ github.repository_owner }}/${{ github.event.repository.name }}:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
         env:
           MAIN_GITHUB_RELEASE_USERNAME: ${{ secrets.MAIN_GITHUB_RELEASE_USERNAME }}
           MAIN_GITHUB_RELEASE_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
           GITHUB_ACCESS_TOKEN: ${{ secrets.MAIN_GITHUB_RELEASE_TOKEN }}
 
-      - name: build & push container image '${{ steps.maven-version.outputs.container-image }}'
-        if: inputs.do-containerize && steps.branch-name.outputs.ref_branch == 'main' && github.event_name != 'pull_request'
+      - name: build & push container image '${{ steps.maven-version.outputs.candidate-image }}'
+        if: inputs.do-containerize && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: mr-smithers-excellent/docker-build-push@v7
         with:
           image: ${{ github.event.repository.name }}
-          tags: ${{ steps.maven-version.outputs.version }},latest
+          addLatest: false
+          tags: ${{ steps.maven-version.outputs.image-tag }}
           dockerfile: ./Dockerfile
           registry: ${{ inputs.registry }}
           username: ${{ secrets.GHCR_USERNAME }}
           password: ${{ secrets.GHCR_PASSWORD }}
+
+      - name: publish container image output
+        id: published-image
+        if: inputs.do-containerize && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        shell: bash
+        run: echo "container-image=${{ steps.maven-version.outputs.candidate-image }}" >> "$GITHUB_OUTPUT"

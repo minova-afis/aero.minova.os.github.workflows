@@ -32,12 +32,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: get branch name
-        id: branch-name
-        uses: tj-actions/branch-names@v8.0.1
-
       - name: checkout repository ${{ inputs.cd-repo-name }}
-        if: steps.branch-name.outputs.ref_branch == 'main' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/checkout@v7
         with:
           repository: ${{ inputs.cd-repo-name }}
@@ -46,7 +42,7 @@ jobs:
           token: ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}
 
       - name: update '${{ inputs.patch-file }}' with '${{ inputs.container-image }}'
-        if:  inputs.container-image != '' && steps.branch-name.outputs.ref_branch == 'main' && github.event_name != 'pull_request'
+        if: inputs.container-image != '' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |
           test -f ${{ inputs.patch-file }} || (echo "Test: ${{ inputs.patch-file }} not found" && exit 1)
           cat "${{ inputs.patch-file }}" | sed -e "s#image:.*#image: ${{ inputs.container-image }}#g" | tee "${{ inputs.patch-file }}.tmp" || (echo "Sed: Unable to replace image name with ${{ inputs.container-image }}" && exit 2)
