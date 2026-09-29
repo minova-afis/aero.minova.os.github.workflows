@@ -41,6 +41,8 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v4
         with:
+          ref: main
+          fetch-depth: 0
           token: ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}
 
       - name: set up JDK
