@@ -19,6 +19,10 @@ on:
         description: 'Should CI flow run a SonarQube scan?'
         type: boolean
         default: false
+      do-maven-cache:
+        description: 'Whether to restore and save the Maven dependency cache.'
+        type: boolean
+        default: false
       maven-goal:
         description: 'Maven goal during the build, e.g. verify, package, install'
         type: string
@@ -62,7 +66,12 @@ jobs:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
           java-package: jdk
-          cache: maven
+
+      - name: Restore Maven cache
+        if: inputs.do-maven-cache
+        uses: skjolber/maven-cache-github-action@v3.1.1
+        with:
+          step: restore
 
       - name: cache SonarQube packages
         if: inputs.do-sonar-scan
@@ -158,6 +167,12 @@ jobs:
           name: dependency-check-report.html
           path: target/dependency-check-report.html
 
+      - name: Save Maven cache
+        if: ${{ inputs.do-maven-cache && !cancelled() }}
+        uses: skjolber/maven-cache-github-action@v3.1.1
+        with:
+          step: save
+
       - name: prepare immutable container image tag
         if: inputs.do-containerize
         id: maven-version
@@ -171,15 +186,12 @@ jobs:
             -Dexpression=project.version \
             -DforceStdout)
 
-          # CI images are development builds. Use a SemVer prerelease based on
-          # the Maven base version and the GitHub run identity, so a rerun gets
-          # a new tag instead of replacing an existing image. Release images
-          # are created by release-java.yml and keep their plain Maven version.
           if [[ "$MAVEN_VERSION" == *-SNAPSHOT ]]; then
             BASE_VERSION="${MAVEN_VERSION%-SNAPSHOT}"
           else
             BASE_VERSION="$MAVEN_VERSION"
           fi
+
           IMAGE_TAG="${BASE_VERSION}-dev.${{ github.run_number }}.${{ github.run_attempt }}"
 
           echo "image-tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
