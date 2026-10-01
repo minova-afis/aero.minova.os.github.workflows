@@ -20,7 +20,7 @@ on:
         type: boolean
         default: false
       do-maven-cache:
-        description: 'Whether to restore and save the Maven dependency cache.'
+        description: 'Whether to cache Maven dependencies.'
         type: boolean
         default: false
       maven-goal:
@@ -66,12 +66,10 @@ jobs:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
           java-package: jdk
-
-      - name: Restore Maven cache
-        if: inputs.do-maven-cache
-        uses: skjolber/maven-cache-github-action@v3.1.1
-        with:
-          step: restore
+          cache: ${{ inputs.do-maven-cache && 'maven' || '' }}
+          cache-dependency-path: |
+            pom.xml
+            **/pom.xml
 
       - name: cache SonarQube packages
         if: inputs.do-sonar-scan
@@ -166,12 +164,6 @@ jobs:
         with:
           name: dependency-check-report.html
           path: target/dependency-check-report.html
-
-      - name: Save Maven cache
-        if: ${{ inputs.do-maven-cache && !cancelled() }}
-        uses: skjolber/maven-cache-github-action@v3.1.1
-        with:
-          step: save
 
       - name: prepare immutable container image tag
         if: inputs.do-containerize
