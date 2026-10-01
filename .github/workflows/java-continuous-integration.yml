@@ -203,7 +203,7 @@ jobs:
 
       - name: build & push container image '${{ steps.maven-version.outputs.candidate-image }}'
         if: inputs.do-containerize && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        uses: mr-smithers-excellent/docker-build-push@v7
+        uses: mr-smithers-excellent/docker-build-push@v7.1
         with:
           image: ${{ github.event.repository.name }}
           addLatest: false
