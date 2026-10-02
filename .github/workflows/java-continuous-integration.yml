@@ -66,6 +66,7 @@ jobs:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
           java-package: jdk
+          show-download-progress: true
           cache: ${{ inputs.do-maven-cache && 'maven' || '' }}
           cache-dependency-path: |
             pom.xml
