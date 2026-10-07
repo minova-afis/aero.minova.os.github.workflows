@@ -143,6 +143,8 @@ jobs:
             sonar:sonar \
             -Dsonar.projectKey=${{github.repository_owner}}_${{github.event.repository.name}} \
             -Dsonar.branch.name=${{steps.branch-name.outputs.current_branch}} \
+            -Dsonar.scanner.connectTimeout=120000 \
+            -Dsonar.scanner.socketTimeout=120000 \
             --file pom.xml \
             --settings .github/settings.xml
         env:
