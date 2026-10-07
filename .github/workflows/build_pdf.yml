@@ -83,7 +83,7 @@ jobs:
           python build_from_index.py ${{ github.event.inputs.projektname }}
 
       - name: PDF-Ergebnis als Artifact bereitstellen
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: PDF-${{ github.event.inputs.projektname }}
           path: projekte/${{ github.event.inputs.projektname }}/output/
