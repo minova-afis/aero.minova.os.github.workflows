@@ -42,12 +42,12 @@ jobs:
 
     steps:
       - name: checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           token: ${{ secrets.MAIN_GITHUB_REPO_FULL_ACCESS }}
 
       - name: set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java-version }}
@@ -82,7 +82,7 @@ jobs:
           echo "container-image=${{ inputs.registry }}/${{ github.repository_owner }}/${{ inputs.container-name }}:${{ inputs.release-version }}" >> $GITHUB_OUTPUT
 
       - name: build & push container image '${{ steps.container-name-and-githash.outputs.container-image }}'
-        uses: mr-smithers-excellent/docker-build-push@v6
+        uses: mr-smithers-excellent/docker-build-push@v7
         with:
           image: ${{ inputs.container-name }}
           addLatest: true
