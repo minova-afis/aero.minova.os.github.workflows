@@ -51,7 +51,7 @@ jobs:
         uses: tj-actions/branch-names@v8.0.1
 
       - name: checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
@@ -72,7 +72,7 @@ jobs:
 
       - name: retrieving NVD database (ghcr.io)
         if: inputs.dependency-check-auto-update == false
-        uses: nick-invision/retry@v3
+        uses: nick-invision/retry@v4
         with:
           timeout_minutes: 5
           max_attempts: 3
@@ -149,7 +149,7 @@ jobs:
           SONAR_LOGIN: ${{ secrets.SONAR_LOGIN }}
 
       - name: store report of Dependency Check
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dependency-check-report.html
           path: target/dependency-check-report.html
@@ -174,7 +174,7 @@ jobs:
 
       - name: build & push container image '${{ steps.container-name-and-githash.outputs.container-image }}'
         if: inputs.do-containerize == true && steps.branch-name.outputs.ref_branch == 'main' && github.event_name != 'pull_request'
-        uses: mr-smithers-excellent/docker-build-push@v6
+        uses: mr-smithers-excellent/docker-build-push@v7
         with:
           image: ${{github.event.repository.name}}
           addLatest: true
