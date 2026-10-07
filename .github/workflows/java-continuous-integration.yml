@@ -77,7 +77,7 @@ jobs:
 
       - name: retrieving NVD database (ghcr.io)
         if: inputs.dependency-check-auto-update == false
-        uses: nick-invision/retry@v2
+        uses: nick-invision/retry@v3
         with:
           timeout_minutes: 5
           max_attempts: 3
