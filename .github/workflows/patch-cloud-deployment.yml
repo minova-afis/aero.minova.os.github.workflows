@@ -38,7 +38,7 @@ jobs:
 
       - name: checkout repository ${{ inputs.cd-repo-name }}
         if: steps.branch-name.outputs.ref_branch == 'main' && github.event_name != 'pull_request'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ inputs.cd-repo-name }}
           ref: 'main'
