@@ -60,7 +60,7 @@ jobs:
       - name: Projektverzeichnis prüfen
         run: |
           if [ ! -d "projekte/${{ github.event.inputs.projektname }}" ]; then
-            echo "❌ Projektordner 'projekte/${{ github.event.inputs.projektname }}' nicht gefunden."
+            echo "Projektordner 'projekte/${{ github.event.inputs.projektname }}' nicht gefunden."
             exit 1
           fi
 
