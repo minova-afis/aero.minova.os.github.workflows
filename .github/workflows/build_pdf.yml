@@ -20,7 +20,7 @@ on:
         required: true
         type: string
       datum:
-        description: Datum (optional, z. B. 15.07.2025)
+        description: Datum (optional, z. B. 15.07.2025)
         required: false
         type: string
 
