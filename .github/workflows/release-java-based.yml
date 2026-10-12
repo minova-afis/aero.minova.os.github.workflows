@@ -69,6 +69,7 @@ jobs:
           if [ "${{ inputs.release-type }}" = "Patch" ]; then
             echo "Releasing patch"
 
+            mvn help:evaluate -Dexpression=project.version -q -DforceStdout --settings $GITHUB_WORKSPACE/.github/settings.xml # Hiermit können wir Fehler mit diesem Befehl finden.
             current=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout --settings $GITHUB_WORKSPACE/.github/settings.xml)
             echo Current: $current
             major=$(echo $current | cut -d. -f1)
@@ -100,6 +101,7 @@ jobs:
             set -x
             echo "Releasing minor"
             
+            mvn help:evaluate -Dexpression=project.version -q -DforceStdout --settings $GITHUB_WORKSPACE/.github/settings.xml # Hiermit können wir Fehler mit diesem Befehl finden.
             current=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout --settings $GITHUB_WORKSPACE/.github/settings.xml)
             echo Current: $current
             major=$(echo $current | cut -d. -f1)
